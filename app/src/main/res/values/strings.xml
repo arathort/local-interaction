@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Платформа локальної взаємодії</string>
 
-    <!-- Common Actions -->
     <string name="action_cancel">Скасувати</string>
     <string name="action_save">Зберегти</string>
     <string name="action_create">Створити</string>
@@ -13,26 +12,22 @@
     <string name="action_clear_filters">Скинути фільтри</string>
     <string name="action_logout">Вийти з акаунту</string>
 
-    <!-- User Roles -->
     <string name="role_guest">Гість</string>
     <string name="role_volunteer">Волонтер</string>
     <string name="role_organizer">Організатор</string>
     <string name="role_admin">Адміністратор</string>
 
-    <!-- Event Statuses -->
     <string name="event_status_pending_moderation">На розгляді</string>
     <string name="event_status_open">Відкрито</string>
     <string name="event_status_in_progress">В процесі</string>
     <string name="event_status_completed">Виконано</string>
     <string name="event_status_cancelled">Скасовано</string>
 
-    <!-- Application Statuses -->
     <string name="application_status_pending">Очікує розгляду</string>
     <string name="application_status_approved">Схвалено</string>
     <string name="application_status_rejected">Відхилено</string>
     <string name="application_status_withdrawn">Відкликано</string>
 
-    <!-- Home Screen (Map & Feed) -->
     <string name="home_title">Локальні ініціативи</string>
     <string name="home_view_map">Карта</string>
     <string name="home_view_list">Список</string>
@@ -42,7 +37,6 @@
     <string name="home_quota_progress">Зібрано %1$d з %2$d</string>
     <string name="home_load_more">Завантажити ще</string>
 
-    <!-- Event Details Screen -->
     <string name="event_details_title">Деталі заходу</string>
     <string name="event_details_organizer_section">Організатор</string>
     <string name="event_details_rating_format">★ %1$.1f</string>
@@ -57,7 +51,6 @@
     <string name="event_details_motivation_hint">Коротко опишіть вашу мотивацію або досвід…</string>
     <string name="event_details_submit_application">Подати заявку</string>
 
-    <!-- Auth & Registration Screen -->
     <string name="auth_tab_login">Вхід</string>
     <string name="auth_tab_register">Реєстрація</string>
     <string name="auth_email_label">Електронна пошта</string>
@@ -73,7 +66,6 @@
     <string name="auth_select_role_label">Оберіть вашу роль</string>
     <string name="auth_privacy_policy_consent">Я погоджуюся з політикою конфіденційності та правилами платформи</string>
 
-    <!-- Profile & My Tasks Screen -->
     <string name="profile_title">Профіль користувача</string>
     <string name="profile_tab_info">Особисті дані</string>
     <string name="profile_tab_my_tasks">Мої завдання</string>
@@ -84,7 +76,6 @@
     <string name="profile_my_applications_empty">Ви ще не подавали заявок на участь у заходах</string>
     <string name="profile_my_events_empty">Ви ще не створили жодного заходу</string>
 
-    <!-- Create / Edit Event Screen -->
     <string name="create_event_title">Створення заходу</string>
     <string name="edit_event_title">Редагування заходу</string>
     <string name="event_form_name_label">Назва заходу</string>
@@ -97,7 +88,6 @@
     <string name="event_form_pick_photos">Обрати фотографії з галереї</string>
     <string name="event_form_submit_moderation">Створити (відправити на розгляд)</string>
 
-    <!-- Manage Applications Screen -->
     <string name="manage_applications_title">Управління заявками</string>
     <string name="manage_applications_confirmed_count">Підтверджено: %1$d з %2$d</string>
     <string name="manage_applications_approve">Схвалити</string>
@@ -105,14 +95,12 @@
     <string name="manage_applications_reject_reason_hint">Вкажіть причину відхилення заявки…</string>
     <string name="manage_applications_empty">Заявок на цей захід поки немає</string>
 
-    <!-- Review Screen / Dialog -->
     <string name="review_title">Оцінювання співпраці</string>
     <string name="review_subtitle">Захід: %1$s • Користувач: %2$s</string>
     <string name="review_rating_label">Оцінка (від 1 до 5 зірочок)</string>
     <string name="review_comment_hint">Поділіться враженнями від співпраці…</string>
     <string name="review_action_rate">Оцінити</string>
 
-    <!-- Admin Panel Screen -->
     <string name="admin_panel_title">Адміністративна панель</string>
     <string name="admin_tab_moderation">Модерація заходів</string>
     <string name="admin_tab_categories">Категорії</string>
@@ -126,7 +114,6 @@
     <string name="admin_action_block_user">Заблокувати користувача</string>
     <string name="admin_block_reason_hint">Вкажіть причину блокування порушника…</string>
 
-    <!-- Validation Error Messages -->
     <string name="error_invalid_email">Введіть коректну адресу електронної пошти</string>
     <string name="error_email_already_exists">Користувач із цією електронною поштою вже зареєстрований</string>
     <string name="error_password_too_short">Пароль має містити щонайменше 8 символів</string>

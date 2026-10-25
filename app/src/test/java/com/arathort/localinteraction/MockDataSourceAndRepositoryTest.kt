@@ -128,7 +128,6 @@ class MockDataSourceAndRepositoryTest {
     fun `submitReview allows only one review per pair on IN_PROGRESS or COMPLETED event`() = runTest {
         authRepository.switchDemoRole(UserRole.VOLUNTEER)
 
-        // Event-1 is OPEN -> review should fail
         val openEventReview = reviewRepository.submitReview(
             eventId = "event-1",
             targetUserId = "user-organizer-1",
@@ -137,7 +136,6 @@ class MockDataSourceAndRepositoryTest {
         )
         assertFalse(openEventReview.isSuccess)
 
-        // Event-4 is IN_PROGRESS -> first review succeeds, duplicate fails
         val firstValidReview = reviewRepository.submitReview(
             eventId = "event-4",
             targetUserId = "user-organizer-1",
