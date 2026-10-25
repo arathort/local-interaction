@@ -1,3 +1,135 @@
 <resources>
-    <string name="app_name">Local Interaction</string>
+    <string name="app_name">Платформа локальної взаємодії</string>
+
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_save">Зберегти</string>
+    <string name="action_create">Створити</string>
+    <string name="action_edit">Редагувати</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_retry">Спробувати ще раз</string>
+    <string name="action_back">Назад</string>
+    <string name="action_search">Пошук заходів…</string>
+    <string name="action_clear_filters">Скинути фільтри</string>
+    <string name="action_logout">Вийти з акаунту</string>
+
+    <string name="role_guest">Гість</string>
+    <string name="role_volunteer">Волонтер</string>
+    <string name="role_organizer">Організатор</string>
+    <string name="role_admin">Адміністратор</string>
+
+    <string name="event_status_pending_moderation">На розгляді</string>
+    <string name="event_status_open">Відкрито</string>
+    <string name="event_status_in_progress">В процесі</string>
+    <string name="event_status_completed">Виконано</string>
+    <string name="event_status_cancelled">Скасовано</string>
+
+    <string name="application_status_pending">Очікує розгляду</string>
+    <string name="application_status_approved">Схвалено</string>
+    <string name="application_status_rejected">Відхилено</string>
+    <string name="application_status_withdrawn">Відкликано</string>
+
+    <string name="home_title">Локальні ініціативи</string>
+    <string name="home_view_map">Карта</string>
+    <string name="home_view_list">Список</string>
+    <string name="home_filter_categories">Категорії</string>
+    <string name="home_all_categories">Усі категорії</string>
+    <string name="home_empty_events">Відкритих заходів за обраними критеріями не знайдено</string>
+    <string name="home_quota_progress">Зібрано %1$d з %2$d</string>
+    <string name="home_load_more">Завантажити ще</string>
+
+    <string name="event_details_title">Деталі заходу</string>
+    <string name="event_details_organizer_section">Організатор</string>
+    <string name="event_details_rating_format">★ %1$.1f</string>
+    <string name="event_details_contacts_label">Контактний телефон: %1$s</string>
+    <string name="event_details_comments_section">Коментарі (%1$d)</string>
+    <string name="event_details_comment_hint">Напишіть коментар…</string>
+    <string name="event_details_comment_send">Надіслати</string>
+    <string name="event_details_action_join">Долучитися</string>
+    <string name="event_details_action_withdraw">Відкликати заявку</string>
+    <string name="event_details_action_manage_applications">Управління заявками</string>
+    <string name="event_details_action_change_status">Змінити статус</string>
+    <string name="event_details_motivation_hint">Коротко опишіть вашу мотивацію або досвід…</string>
+    <string name="event_details_submit_application">Подати заявку</string>
+
+    <string name="auth_tab_login">Вхід</string>
+    <string name="auth_tab_register">Реєстрація</string>
+    <string name="auth_email_label">Електронна пошта</string>
+    <string name="auth_password_label">Пароль</string>
+    <string name="auth_confirm_password_label">Підтвердження пароля</string>
+    <string name="auth_full_name_label">ПІБ</string>
+    <string name="auth_toggle_password_visibility">Показати або приховати пароль</string>
+    <string name="auth_forgot_password">Забули пароль?</string>
+    <string name="auth_login_button">Увійти</string>
+    <string name="auth_register_button">Зареєструватися</string>
+    <string name="auth_google_sign_in">Увійти через Google</string>
+    <string name="auth_facebook_sign_in">Увійти через Facebook</string>
+    <string name="auth_select_role_label">Оберіть вашу роль</string>
+    <string name="auth_privacy_policy_consent">Я погоджуюся з політикою конфіденційності та правилами платформи</string>
+
+    <string name="profile_title">Профіль користувача</string>
+    <string name="profile_tab_info">Особисті дані</string>
+    <string name="profile_tab_my_tasks">Мої завдання</string>
+    <string name="profile_phone_label">Номер телефону</string>
+    <string name="profile_bio_label">Про себе</string>
+    <string name="profile_reviews_section">Відгуки та рейтинг</string>
+    <string name="profile_no_reviews">Поки що немає отриманих відгуків</string>
+    <string name="profile_my_applications_empty">Ви ще не подавали заявок на участь у заходах</string>
+    <string name="profile_my_events_empty">Ви ще не створили жодного заходу</string>
+
+    <string name="create_event_title">Створення заходу</string>
+    <string name="edit_event_title">Редагування заходу</string>
+    <string name="event_form_name_label">Назва заходу</string>
+    <string name="event_form_category_label">Категорія</string>
+    <string name="event_form_description_label">Опис заходу (мінімум 50 символів)</string>
+    <string name="event_form_address_label">Фізична адреса</string>
+    <string name="event_form_pick_location">Обрати точку на карті</string>
+    <string name="event_form_date_time_label">Дата та час проведення</string>
+    <string name="event_form_quota_label">Квота волонтерів</string>
+    <string name="event_form_pick_photos">Обрати фотографії з галереї</string>
+    <string name="event_form_submit_moderation">Створити (відправити на розгляд)</string>
+
+    <string name="manage_applications_title">Управління заявками</string>
+    <string name="manage_applications_confirmed_count">Підтверджено: %1$d з %2$d</string>
+    <string name="manage_applications_approve">Схвалити</string>
+    <string name="manage_applications_reject">Відхилити</string>
+    <string name="manage_applications_reject_reason_hint">Вкажіть причину відхилення заявки…</string>
+    <string name="manage_applications_empty">Заявок на цей захід поки немає</string>
+
+    <string name="review_title">Оцінювання співпраці</string>
+    <string name="review_subtitle">Захід: %1$s • Користувач: %2$s</string>
+    <string name="review_rating_label">Оцінка (від 1 до 5 зірочок)</string>
+    <string name="review_comment_hint">Поділіться враженнями від співпраці…</string>
+    <string name="review_action_rate">Оцінити</string>
+
+    <string name="admin_panel_title">Адміністративна панель</string>
+    <string name="admin_tab_moderation">Модерація заходів</string>
+    <string name="admin_tab_categories">Категорії</string>
+    <string name="admin_tab_complaints">Скарги та користувачі</string>
+    <string name="admin_action_publish">Опублікувати</string>
+    <string name="admin_action_reject_event">Відхилити</string>
+    <string name="admin_reject_reason_hint">Обов’язковий коментар причини відхилення…</string>
+    <string name="admin_category_name_hint">Назва нової категорії</string>
+    <string name="admin_category_bound_events">Прив’язаних заходів: %1$d</string>
+    <string name="admin_action_archive_category">Архівувати</string>
+    <string name="admin_action_block_user">Заблокувати користувача</string>
+    <string name="admin_block_reason_hint">Вкажіть причину блокування порушника…</string>
+
+    <string name="error_invalid_email">Введіть коректну адресу електронної пошти</string>
+    <string name="error_email_already_exists">Користувач із цією електронною поштою вже зареєстрований</string>
+    <string name="error_password_too_short">Пароль має містити щонайменше 8 символів</string>
+    <string name="error_passwords_do_not_match">Паролі не збігаються</string>
+    <string name="error_role_required">Оберіть роль: Волонтер або Організатор</string>
+    <string name="error_privacy_consent_required">Необхідно погодитися з політикою конфіденційності</string>
+    <string name="error_event_title_required">Вкажіть назву заходу</string>
+    <string name="error_event_description_too_short">Опис заходу має містити щонайменше 50 символів (зараз: %1$d)</string>
+    <string name="error_event_location_required">Вкажіть фізичну адресу та оберіть координати на карті</string>
+    <string name="error_event_quota_invalid">Квота волонтерів має бути цілим числом більше 0</string>
+    <string name="error_event_category_required">Оберіть категорію зі списку</string>
+    <string name="error_review_rating_invalid">Оберіть рейтинг від 1 до 5 зірочок</string>
+    <string name="error_review_comment_required">Додайте текстовий коментар до відгуку</string>
+    <string name="error_review_already_submitted">Ви вже залишили відгук для цього учасника в межах даного заходу</string>
+    <string name="error_review_event_status_invalid">Оцінювання доступне лише для заходів у статусі «В процесі» або «Виконано»</string>
+    <string name="error_rejection_reason_required">Вкажіть причину відхилення</string>
+    <string name="error_block_reason_required">Вкажіть причину блокування</string>
+    <string name="error_unauthorized_guest">Увійдіть або зареєструйтеся для виконання цієї дії</string>
 </resources>
