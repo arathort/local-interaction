@@ -2,17 +2,22 @@ package com.arathort.localinteraction
 
 import com.arathort.localinteraction.data.datasource.mock.MockLocalInteractionDataSource
 import com.arathort.localinteraction.data.datasource.remote.JwtTokenManager
+import com.arathort.localinteraction.data.repository.ApplicationRepositoryImpl
 import com.arathort.localinteraction.data.repository.AuthRepositoryImpl
 import com.arathort.localinteraction.data.repository.EventRepositoryImpl
 import com.arathort.localinteraction.data.repository.ReviewRepositoryImpl
+import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
+import com.arathort.localinteraction.domain.model.ModerationStatus
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.domain.model.UserStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,6 +28,7 @@ class MockDataSourceAndRepositoryTest {
     private lateinit var dataSource: MockLocalInteractionDataSource
     private lateinit var authRepository: AuthRepositoryImpl
     private lateinit var eventRepository: EventRepositoryImpl
+    private lateinit var applicationRepository: ApplicationRepositoryImpl
     private lateinit var reviewRepository: ReviewRepositoryImpl
 
     @Before
@@ -33,6 +39,7 @@ class MockDataSourceAndRepositoryTest {
         }
         authRepository = AuthRepositoryImpl(dataSource)
         eventRepository = EventRepositoryImpl(dataSource)
+        applicationRepository = ApplicationRepositoryImpl(dataSource)
         reviewRepository = ReviewRepositoryImpl(dataSource)
     }
 
@@ -41,6 +48,9 @@ class MockDataSourceAndRepositoryTest {
         val allOpenEvents = eventRepository.observeOpenEvents().first()
         assertEquals(3, allOpenEvents.size)
         assertTrue(allOpenEvents.all { it.status == EventStatus.OPEN })
+        assertTrue(allOpenEvents.all { it.moderationStatus == ModerationStatus.APPROVED })
+        assertEquals("Підтверджено: 8 з 25", allOpenEvents.first { it.id == "event-1" }.progressText)
+        assertEquals("Тарас Мельник", allOpenEvents.first { it.id == "event-1" }.organizer.fullName)
 
         val filteredByCategory = eventRepository.observeOpenEvents(
             categoryIds = setOf("cat-eco")
@@ -92,7 +102,9 @@ class MockDataSourceAndRepositoryTest {
             acceptedPrivacyPolicy = true
         )
         assertTrue(validRegistration.isSuccess)
-        assertEquals(UserRole.ORGANIZER, validRegistration.getOrThrow().role)
+        val user = validRegistration.getOrThrow()
+        assertEquals(UserRole.ORGANIZER, user.role)
+        assertEquals(UserStatus.ACTIVE, user.status)
         assertNotNull(jwtTokenManager.accessToken)
     }
 
@@ -121,7 +133,29 @@ class MockDataSourceAndRepositoryTest {
             volunteerQuota = 20
         )
         assertTrue(validEventResult.isSuccess)
-        assertEquals(EventStatus.PENDING_MODERATION, validEventResult.getOrThrow().status)
+        val createdEvent = validEventResult.getOrThrow()
+        assertEquals(EventStatus.PENDING_MODERATION, createdEvent.status)
+        assertEquals(ModerationStatus.PENDING, createdEvent.moderationStatus)
+        assertEquals("м. Київ, Голосіївський проспект, 87", createdEvent.location.address)
+    }
+
+    @Test
+    fun `application approval exposes organizer contacts and withdrawal clears contacts`() = runTest {
+        val submitted = applicationRepository.submitApplication(
+            eventId = "event-2",
+            motivationLetter = "Готова допомагати з пакуванням"
+        ).getOrThrow()
+        assertEquals(ApplicationStatus.PENDING, submitted.status)
+        assertNull(submitted.organizerContacts)
+
+        val approved = applicationRepository.approveApplication(submitted.id).getOrThrow()
+        assertEquals(ApplicationStatus.APPROVED, approved.status)
+        assertNotNull(approved.organizerContacts)
+        assertEquals("taras.melnyk@gmail.com", approved.organizerContacts?.email)
+
+        val withdrawn = applicationRepository.withdrawApplication(submitted.id).getOrThrow()
+        assertEquals(ApplicationStatus.WITHDRAWN, withdrawn.status)
+        assertNull(withdrawn.organizerContacts)
     }
 
     @Test
@@ -143,6 +177,7 @@ class MockDataSourceAndRepositoryTest {
             comment = "Чудова координація робіт на майданчику!"
         )
         assertTrue(firstValidReview.isSuccess)
+        assertEquals("Олена Коваленко", firstValidReview.getOrThrow().authorName)
 
         val duplicateReview = reviewRepository.submitReview(
             eventId = "event-4",

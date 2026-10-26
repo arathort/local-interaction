@@ -27,7 +27,7 @@ class EventRepositoryImpl @Inject constructor(
             .map { it.toDomain() }
             .filter { event ->
                 event.status == EventStatus.OPEN &&
-                    (categoryIds.isEmpty() || event.categoryId in categoryIds) &&
+                    (categoryIds.isEmpty() || (event.categoryId != null && event.categoryId in categoryIds)) &&
                     (normalizedQuery.isEmpty() ||
                         event.title.contains(normalizedQuery, ignoreCase = true) ||
                         event.description.contains(normalizedQuery, ignoreCase = true))

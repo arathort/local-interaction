@@ -7,17 +7,24 @@ import com.arathort.localinteraction.data.dto.CategoryDto
 import com.arathort.localinteraction.data.dto.CommentDto
 import com.arathort.localinteraction.data.dto.ComplaintDto
 import com.arathort.localinteraction.data.dto.EventDto
+import com.arathort.localinteraction.data.dto.GeoLocationDto
+import com.arathort.localinteraction.data.dto.MyTaskHistoryItemDto
+import com.arathort.localinteraction.data.dto.OrganizerContactsInfoDto
+import com.arathort.localinteraction.data.dto.OrganizerShortInfoDto
 import com.arathort.localinteraction.data.dto.ReviewDto
 import com.arathort.localinteraction.data.dto.UserDto
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
+import com.arathort.localinteraction.domain.model.ModerationStatus
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.domain.model.UserStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +40,67 @@ class MockLocalInteractionDataSource @Inject constructor(
         id = "user-guest",
         fullName = "Гість платформи",
         email = "",
-        role = UserRole.GUEST.name
+        role = UserRole.GUEST.apiValue,
+        status = UserStatus.ACTIVE.apiValue
+    )
+
+    private val initialReviews = listOf(
+        ReviewDto(
+            id = "review-1",
+            eventId = "event-1",
+            eventTitle = "Осіння висадка дерев на Подолі",
+            authorId = "user-organizer-1",
+            authorName = "Тарас Мельник",
+            targetUserId = "user-volunteer-1",
+            rating = 5,
+            comment = "Надзвичайно відповідальна волонтерка! Дякуємо за активну участь.",
+            createdAt = "2026-10-20T12:00:00Z"
+        )
+    )
+
+    private val initialApplications = listOf(
+        ApplicationDto(
+            id = "app-1",
+            eventId = "event-1",
+            eventTitle = "Весняне прибирання парку «Наталка» та берегової лінії Дніпра",
+            eventDate = "2026-10-31T10:00:00Z",
+            eventStatus = EventStatus.OPEN.apiValue,
+            volunteerId = "user-volunteer-1",
+            volunteerName = "Олена Коваленко",
+            volunteerRating = 4.9,
+            volunteerPhone = "+380 67 123 45 67",
+            motivationLetter = "Маю досвід організації еко-толок на Оболоні, візьму власні багаторазові рукавички.",
+            status = ApplicationStatus.APPROVED.apiValue,
+            canWithdraw = true,
+            organizerContacts = OrganizerContactsInfoDto(
+                fullName = "Тарас Мельник",
+                email = "taras.melnyk@gmail.com",
+                phone = "+380 50 987 65 43"
+            ),
+            createdAt = "2026-10-24T09:30:00Z",
+            updatedAt = "2026-10-24T11:00:00Z"
+        ),
+        ApplicationDto(
+            id = "app-2",
+            eventId = "event-4",
+            eventTitle = "Відновлення дитячого майданчика у дворі на Сихові",
+            eventDate = "2026-10-29T10:00:00Z",
+            eventStatus = EventStatus.IN_PROGRESS.apiValue,
+            volunteerId = "user-volunteer-1",
+            volunteerName = "Олена Коваленко",
+            volunteerRating = 4.9,
+            volunteerPhone = "+380 67 123 45 67",
+            motivationLetter = "Допоможу з фарбуванням та висадкою рослин.",
+            status = ApplicationStatus.APPROVED.apiValue,
+            canWithdraw = true,
+            organizerContacts = OrganizerContactsInfoDto(
+                fullName = "Тарас Мельник",
+                email = "taras.melnyk@gmail.com",
+                phone = "+380 50 987 65 43"
+            ),
+            createdAt = "2026-10-23T14:15:00Z",
+            updatedAt = "2026-10-23T16:00:00Z"
+        )
     )
 
     private val initialUsers = listOf(
@@ -42,30 +109,42 @@ class MockLocalInteractionDataSource @Inject constructor(
             fullName = "Олена Коваленко",
             email = "olena.kovalenko@ukr.net",
             phone = "+380 67 123 45 67",
-            bio = "Активна волонтерка у сфері екології та допомоги притулкам для тварин у Києві.",
-            role = UserRole.VOLUNTEER.name,
-            averageRating = 4.9,
-            reviewsCount = 12
+            description = "Активна волонтерка у сфері екології та допомоги притулкам для тварин у Києві.",
+            role = UserRole.VOLUNTEER.apiValue,
+            rating = 4.9,
+            reviews = initialReviews,
+            status = UserStatus.ACTIVE.apiValue,
+            myTasks = initialApplications.map { app ->
+                MyTaskHistoryItemDto(
+                    applicationId = app.id,
+                    eventId = app.eventId,
+                    eventTitle = app.eventTitle,
+                    eventStatus = app.eventStatus,
+                    applicationStatus = app.status,
+                    canWithdraw = app.canWithdraw,
+                    appliedAt = app.createdAt
+                )
+            }
         ),
         UserDto(
             id = "user-organizer-1",
             fullName = "Тарас Мельник",
             email = "taras.melnyk@gmail.com",
             phone = "+380 50 987 65 43",
-            bio = "Координатор громадської ініціативи «Чисте місто» та волонтерського штабу.",
-            role = UserRole.ORGANIZER.name,
-            averageRating = 4.8,
-            reviewsCount = 24
+            description = "Координатор громадської ініціативи «Чисте місто» та волонтерського штабу.",
+            role = UserRole.ORGANIZER.apiValue,
+            rating = 4.8,
+            status = UserStatus.ACTIVE.apiValue
         ),
         UserDto(
             id = "user-admin-1",
             fullName = "Ірина Бондаренко",
             email = "admin@localinteraction.ua",
             phone = "+380 44 200 10 20",
-            bio = "Модераторка платформи локальної взаємодії.",
-            role = UserRole.ADMIN.name,
-            averageRating = 5.0,
-            reviewsCount = 5
+            description = "Модераторка платформи локальної взаємодії.",
+            role = UserRole.ADMIN.apiValue,
+            rating = 5.0,
+            status = UserStatus.ACTIVE.apiValue
         )
     )
 
@@ -77,6 +156,12 @@ class MockLocalInteractionDataSource @Inject constructor(
         CategoryDto(id = "cat-education", name = "Освіта та культура", boundEventsCount = 0)
     )
 
+    private val defaultOrganizer = OrganizerShortInfoDto(
+        id = "user-organizer-1",
+        fullName = "Тарас Мельник",
+        rating = 4.8
+    )
+
     private val initialEvents = listOf(
         EventDto(
             id = "event-1",
@@ -84,17 +169,19 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = "Запрошуємо небайдужих мешканців Оболоні та всього Києва долучитися до великої толоки в парку «Наталка». Інвентар, рукавички, мішки для сортування пластику та скла надає організатор.",
             categoryId = "cat-eco",
             categoryName = "Екологія та довкілля",
-            status = EventStatus.OPEN.name,
-            dateTimeMillis = 1793437200000L,
-            address = "м. Київ, Оболонська набережна, 9 (парк «Наталка»)",
-            latitude = 50.5010,
-            longitude = 30.5194,
+            status = EventStatus.OPEN.apiValue,
+            moderationStatus = ModerationStatus.APPROVED.apiValue,
+            eventDate = "2026-10-31T10:00:00Z",
+            location = GeoLocationDto(
+                address = "м. Київ, Оболонська набережна, 9 (парк «Наталка»)",
+                latitude = 50.5010,
+                longitude = 30.5194
+            ),
             volunteerQuota = 25,
-            approvedCount = 8,
-            organizerId = "user-organizer-1",
-            organizerName = "Тарас Мельник",
-            organizerRating = 4.8,
-            organizerContactPhone = "+380 50 987 65 43"
+            approvedVolunteersCount = 8,
+            progressText = "Підтверджено: 8 з 25",
+            organizer = defaultOrganizer,
+            createdAt = "2026-10-20T08:00:00Z"
         ),
         EventDto(
             id = "event-2",
@@ -102,17 +189,19 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = "Волонтерський хаб на Подолі запрошує помічників для плетіння сезонних маскувальних сіток та фасування теплих речей і медикаментів для захисників та вимушених переселенців.",
             categoryId = "cat-defense",
             categoryName = "Допомога ЗСУ та ВПО",
-            status = EventStatus.OPEN.name,
-            dateTimeMillis = 1793523600000L,
-            address = "м. Київ, вул. Спаська, 15",
-            latitude = 50.4666,
-            longitude = 30.5177,
+            status = EventStatus.OPEN.apiValue,
+            moderationStatus = ModerationStatus.APPROVED.apiValue,
+            eventDate = "2026-11-01T10:00:00Z",
+            location = GeoLocationDto(
+                address = "м. Київ, вул. Спаська, 15",
+                latitude = 50.4666,
+                longitude = 30.5177
+            ),
             volunteerQuota = 15,
-            approvedCount = 11,
-            organizerId = "user-organizer-1",
-            organizerName = "Тарас Мельник",
-            organizerRating = 4.8,
-            organizerContactPhone = "+380 50 987 65 43"
+            approvedVolunteersCount = 11,
+            progressText = "Підтверджено: 11 з 15",
+            organizer = defaultOrganizer,
+            createdAt = "2026-10-21T09:00:00Z"
         ),
         EventDto(
             id = "event-3",
@@ -120,17 +209,19 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = "Потрібні волонтери для вигулу собак, прибирання вольєрів та соціалізації цуценят. Організовано централізований трансфер від станції метро «Героїв Дніпра» о 09:30.",
             categoryId = "cat-animals",
             categoryName = "Допомога тваринам",
-            status = EventStatus.OPEN.name,
-            dateTimeMillis = 1793610000000L,
-            address = "Київська обл., с. Федорівка, притулок «Сіріус»",
-            latitude = 50.8581,
-            longitude = 30.2286,
+            status = EventStatus.OPEN.apiValue,
+            moderationStatus = ModerationStatus.APPROVED.apiValue,
+            eventDate = "2026-11-02T10:00:00Z",
+            location = GeoLocationDto(
+                address = "Київська обл., с. Федорівка, притулок «Сіріус»",
+                latitude = 50.8581,
+                longitude = 30.2286
+            ),
             volunteerQuota = 20,
-            approvedCount = 5,
-            organizerId = "user-organizer-1",
-            organizerName = "Тарас Мельник",
-            organizerRating = 4.8,
-            organizerContactPhone = "+380 50 987 65 43"
+            approvedVolunteersCount = 5,
+            progressText = "Підтверджено: 5 з 20",
+            organizer = defaultOrganizer,
+            createdAt = "2026-10-21T12:00:00Z"
         ),
         EventDto(
             id = "event-4",
@@ -138,17 +229,19 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = "Фарбування дерев'яних елементів, ремонт лавок та висадка кущів лаванди й гортензії біля дитячого майданчика за підтримки місцевого ОСББ.",
             categoryId = "cat-urban",
             categoryName = "Благоустрій громади",
-            status = EventStatus.IN_PROGRESS.name,
-            dateTimeMillis = 1793264400000L,
-            address = "м. Львів, просп. Червоної Калини, 62",
-            latitude = 49.7931,
-            longitude = 24.0561,
+            status = EventStatus.IN_PROGRESS.apiValue,
+            moderationStatus = ModerationStatus.APPROVED.apiValue,
+            eventDate = "2026-10-29T10:00:00Z",
+            location = GeoLocationDto(
+                address = "м. Львів, просп. Червоної Калини, 62",
+                latitude = 49.7931,
+                longitude = 24.0561
+            ),
             volunteerQuota = 10,
-            approvedCount = 10,
-            organizerId = "user-organizer-1",
-            organizerName = "Тарас Мельник",
-            organizerRating = 4.8,
-            organizerContactPhone = "+380 50 987 65 43"
+            approvedVolunteersCount = 10,
+            progressText = "Підтверджено: 10 з 10",
+            organizer = defaultOrganizer,
+            createdAt = "2026-10-18T10:00:00Z"
         ),
         EventDto(
             id = "event-5",
@@ -156,44 +249,19 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = "Навчальний інтенсив із зупинки критичних кровотеч та базової серцево-легеневої реанімації для мешканців району. Потрібні волонтери-координатори для реєстрації учасників.",
             categoryId = "cat-defense",
             categoryName = "Допомога ЗСУ та ВПО",
-            status = EventStatus.PENDING_MODERATION.name,
-            dateTimeMillis = 1793869200000L,
-            address = "м. Київ, вул. Хрещатик, 22",
-            latitude = 50.4488,
-            longitude = 30.5227,
+            status = EventStatus.PENDING_MODERATION.apiValue,
+            moderationStatus = ModerationStatus.PENDING.apiValue,
+            eventDate = "2026-11-05T10:00:00Z",
+            location = GeoLocationDto(
+                address = "м. Київ, вул. Хрещатик, 22",
+                latitude = 50.4488,
+                longitude = 30.5227
+            ),
             volunteerQuota = 8,
-            approvedCount = 0,
-            organizerId = "user-organizer-1",
-            organizerName = "Тарас Мельник",
-            organizerRating = 4.8,
-            organizerContactPhone = "+380 50 987 65 43"
-        )
-    )
-
-    private val initialApplications = listOf(
-        ApplicationDto(
-            id = "app-1",
-            eventId = "event-1",
-            eventTitle = "Весняне прибирання парку «Наталка» та берегової лінії Дніпра",
-            eventStatus = EventStatus.OPEN.name,
-            volunteerId = "user-volunteer-1",
-            volunteerName = "Олена Коваленко",
-            volunteerRating = 4.9,
-            motivationLetter = "Маю досвід організації еко-толок на Оболоні, візьму власні багаторазові рукавички.",
-            status = ApplicationStatus.APPROVED.name,
-            createdAtMillis = 1792800000000L
-        ),
-        ApplicationDto(
-            id = "app-2",
-            eventId = "event-4",
-            eventTitle = "Відновлення дитячого майданчика у дворі на Сихові",
-            eventStatus = EventStatus.IN_PROGRESS.name,
-            volunteerId = "user-volunteer-1",
-            volunteerName = "Олена Коваленко",
-            volunteerRating = 4.9,
-            motivationLetter = "Допоможу з фарбуванням та висадкою рослин.",
-            status = ApplicationStatus.APPROVED.name,
-            createdAtMillis = 1792700000000L
+            approvedVolunteersCount = 0,
+            progressText = "Підтверджено: 0 з 8",
+            organizer = defaultOrganizer,
+            createdAt = "2026-10-25T15:00:00Z"
         )
     )
 
@@ -213,20 +281,6 @@ class MockLocalInteractionDataSource @Inject constructor(
             authorName = "Тарас Мельник",
             text = "Зустрічаємося біля центральної ротонди о 10:00 ранку!",
             createdAtMillis = 1792813600000L
-        )
-    )
-
-    private val initialReviews = listOf(
-        ReviewDto(
-            id = "review-1",
-            eventId = "event-1",
-            eventTitle = "Осіння висадка дерев на Подолі",
-            reviewerId = "user-organizer-1",
-            reviewerName = "Тарас Мельник",
-            targetUserId = "user-volunteer-1",
-            rating = 5,
-            comment = "Надзвичайно відповідальна волонтерка! Дякуємо за активну участь.",
-            createdAtMillis = 1792600000000L
         )
     )
 
@@ -274,14 +328,14 @@ class MockLocalInteractionDataSource @Inject constructor(
                 id = "user-${UUID.randomUUID()}",
                 fullName = trimmedEmail.substringBefore("@"),
                 email = trimmedEmail,
-                role = UserRole.VOLUNTEER.name,
-                averageRating = 5.0,
-                reviewsCount = 0
+                role = UserRole.VOLUNTEER.apiValue,
+                rating = 5.0,
+                status = UserStatus.ACTIVE.apiValue
             ).also { newUser ->
                 usersState.update { it + newUser }
             }
 
-        if (existingUser.isBlocked) {
+        if (existingUser.status == UserStatus.BLOCKED.apiValue) {
             return Result.failure(IllegalStateException("Ваш обліковий запис заблоковано"))
         }
 
@@ -319,9 +373,9 @@ class MockLocalInteractionDataSource @Inject constructor(
             id = "user-${UUID.randomUUID()}",
             fullName = fullName.trim().ifBlank { trimmedEmail.substringBefore("@") },
             email = trimmedEmail,
-            role = role.name,
-            averageRating = 0.0,
-            reviewsCount = 0
+            role = role.apiValue,
+            rating = 0.0,
+            status = UserStatus.ACTIVE.apiValue
         )
         usersState.update { it + newUser }
         jwtTokenManager.updateToken("mock-jwt-token-${newUser.id}")
@@ -339,9 +393,9 @@ class MockLocalInteractionDataSource @Inject constructor(
         delay(simulatedDelayMs / 2)
         val targetUser = when (role) {
             UserRole.GUEST -> guestUser.also { jwtTokenManager.clearToken() }
-            UserRole.VOLUNTEER -> usersState.value.first { it.role == UserRole.VOLUNTEER.name }
-            UserRole.ORGANIZER -> usersState.value.first { it.role == UserRole.ORGANIZER.name }
-            UserRole.ADMIN -> usersState.value.first { it.role == UserRole.ADMIN.name }
+            UserRole.VOLUNTEER -> usersState.value.first { UserRole.fromApiValue(it.role) == UserRole.VOLUNTEER }
+            UserRole.ORGANIZER -> usersState.value.first { UserRole.fromApiValue(it.role) == UserRole.ORGANIZER }
+            UserRole.ADMIN -> usersState.value.first { UserRole.fromApiValue(it.role) == UserRole.ADMIN }
         }
         if (role != UserRole.GUEST) {
             jwtTokenManager.updateToken("mock-jwt-token-${targetUser.id}")
@@ -360,7 +414,7 @@ class MockLocalInteractionDataSource @Inject constructor(
     override suspend fun addComment(eventId: String, text: String): Result<CommentDto> {
         delay(simulatedDelayMs)
         val user = currentUserState.value
-        if (user.role == UserRole.GUEST.name) {
+        if (UserRole.fromApiValue(user.role) == UserRole.GUEST) {
             return Result.failure(IllegalStateException("Увійдіть або зареєструйтеся для виконання цієї дії"))
         }
         if (text.isBlank()) {
@@ -370,7 +424,7 @@ class MockLocalInteractionDataSource @Inject constructor(
             id = "comment-${UUID.randomUUID()}",
             eventId = eventId,
             authorId = user.id,
-            authorName = user.fullName,
+            authorName = user.fullName ?: user.email,
             authorAvatarUrl = user.avatarUrl,
             text = text.trim(),
             createdAtMillis = System.currentTimeMillis()
@@ -391,7 +445,8 @@ class MockLocalInteractionDataSource @Inject constructor(
     ): Result<EventDto> {
         delay(simulatedDelayMs)
         val organizer = currentUserState.value
-        if (organizer.role != UserRole.ORGANIZER.name && organizer.role != UserRole.ADMIN.name) {
+        val organizerRole = UserRole.fromApiValue(organizer.role)
+        if (organizerRole != UserRole.ORGANIZER && organizerRole != UserRole.ADMIN) {
             return Result.failure(IllegalStateException("Тільки організатор може створювати заходи"))
         }
         if (title.isBlank()) {
@@ -415,19 +470,25 @@ class MockLocalInteractionDataSource @Inject constructor(
             description = description.trim(),
             categoryId = category.id,
             categoryName = category.name,
-            status = EventStatus.PENDING_MODERATION.name,
-            dateTimeMillis = dateTimeMillis,
-            address = address.trim(),
-            latitude = location.latitude,
-            longitude = location.longitude,
+            status = EventStatus.PENDING_MODERATION.apiValue,
+            moderationStatus = ModerationStatus.PENDING.apiValue,
+            eventDate = Instant.ofEpochMilli(dateTimeMillis).toString(),
+            location = GeoLocationDto(
+                address = address.trim(),
+                latitude = location.latitude,
+                longitude = location.longitude
+            ),
             volunteerQuota = volunteerQuota,
-            approvedCount = 0,
-            photoUrls = photoUrls,
-            organizerId = organizer.id,
-            organizerName = organizer.fullName,
-            organizerAvatarUrl = organizer.avatarUrl,
-            organizerRating = organizer.averageRating,
-            organizerContactPhone = organizer.phone.ifBlank { "+380 50 000 00 00" }
+            approvedVolunteersCount = 0,
+            progressText = "Підтверджено: 0 з $volunteerQuota",
+            photos = photoUrls,
+            organizer = OrganizerShortInfoDto(
+                id = organizer.id,
+                fullName = organizer.fullName,
+                avatarUrl = organizer.avatarUrl,
+                rating = organizer.rating
+            ),
+            createdAt = Instant.now().toString()
         )
         eventsState.update { listOf(created) + it }
         categoriesState.update { categories ->
@@ -442,22 +503,32 @@ class MockLocalInteractionDataSource @Inject constructor(
         delay(simulatedDelayMs)
         val currentEvent = eventsState.value.find { it.id == eventId }
             ?: return Result.failure(NoSuchElementException("Захід не знайдено"))
-        val updated = currentEvent.copy(status = newStatus.name)
+        val updated = currentEvent.copy(
+            status = newStatus.apiValue,
+            moderationStatus = if (newStatus == EventStatus.OPEN) {
+                ModerationStatus.APPROVED.apiValue
+            } else {
+                currentEvent.moderationStatus
+            }
+        )
         eventsState.update { events -> events.map { if (it.id == eventId) updated else it } }
 
+        val canWithdrawNow = newStatus != EventStatus.COMPLETED && newStatus != EventStatus.CANCELLED
         if (newStatus == EventStatus.CANCELLED) {
             applicationsState.update { apps ->
                 apps.map { app ->
+                    val appStatus = ApplicationStatus.fromApiValue(app.status)
                     if (app.eventId == eventId &&
-                        (app.status == ApplicationStatus.PENDING.name || app.status == ApplicationStatus.APPROVED.name)
+                        (appStatus == ApplicationStatus.PENDING || appStatus == ApplicationStatus.APPROVED)
                     ) {
                         app.copy(
-                            status = ApplicationStatus.REJECTED.name,
-                            eventStatus = newStatus.name,
+                            status = ApplicationStatus.REJECTED.apiValue,
+                            eventStatus = newStatus.apiValue,
+                            canWithdraw = false,
                             rejectionReason = "Захід скасовано організатором"
                         )
                     } else if (app.eventId == eventId) {
-                        app.copy(eventStatus = newStatus.name)
+                        app.copy(eventStatus = newStatus.apiValue, canWithdraw = false)
                     } else {
                         app
                     }
@@ -466,7 +537,11 @@ class MockLocalInteractionDataSource @Inject constructor(
         } else {
             applicationsState.update { apps ->
                 apps.map { app ->
-                    if (app.eventId == eventId) app.copy(eventStatus = newStatus.name) else app
+                    if (app.eventId == eventId) {
+                        app.copy(eventStatus = newStatus.apiValue, canWithdraw = canWithdrawNow)
+                    } else {
+                        app
+                    }
                 }
             }
         }
@@ -479,26 +554,31 @@ class MockLocalInteractionDataSource @Inject constructor(
     ): Result<ApplicationDto> {
         delay(simulatedDelayMs)
         val volunteer = currentUserState.value
-        if (volunteer.role == UserRole.GUEST.name) {
+        if (UserRole.fromApiValue(volunteer.role) == UserRole.GUEST) {
             return Result.failure(IllegalStateException("Увійдіть або зареєструйтеся для виконання цієї дії"))
         }
         val event = eventsState.value.find { it.id == eventId }
             ?: return Result.failure(NoSuchElementException("Захід не знайдено"))
-        if (event.status != EventStatus.OPEN.name) {
+        if (EventStatus.fromApiValue(event.status) != EventStatus.OPEN) {
             return Result.failure(IllegalStateException("Подача заявок доступна лише для відкритих заходів"))
         }
+        val nowIso = Instant.now().toString()
         val newApp = ApplicationDto(
             id = "app-${UUID.randomUUID()}",
             eventId = event.id,
             eventTitle = event.title,
+            eventDate = event.eventDate,
             eventStatus = event.status,
             volunteerId = volunteer.id,
-            volunteerName = volunteer.fullName,
+            volunteerName = volunteer.fullName.orEmpty(),
             volunteerAvatarUrl = volunteer.avatarUrl,
-            volunteerRating = volunteer.averageRating,
+            volunteerRating = volunteer.rating,
+            volunteerPhone = volunteer.phone,
             motivationLetter = motivationLetter.trim(),
-            status = ApplicationStatus.PENDING.name,
-            createdAtMillis = System.currentTimeMillis()
+            status = ApplicationStatus.PENDING.apiValue,
+            canWithdraw = true,
+            createdAt = nowIso,
+            updatedAt = nowIso
         )
         applicationsState.update { listOf(newApp) + it }
         return Result.success(newApp)
@@ -508,17 +588,35 @@ class MockLocalInteractionDataSource @Inject constructor(
         delay(simulatedDelayMs)
         val app = applicationsState.value.find { it.id == applicationId }
             ?: return Result.failure(NoSuchElementException("Заявку не знайдено"))
-        if (app.eventStatus == EventStatus.COMPLETED.name || app.eventStatus == EventStatus.CANCELLED.name) {
+        val currentEventStatus = EventStatus.fromApiValue(app.eventStatus)
+        if (currentEventStatus == EventStatus.COMPLETED || currentEventStatus == EventStatus.CANCELLED) {
             return Result.failure(IllegalStateException("Неможливо відкликати заявку після завершення або скасування заходу"))
         }
-        val wasApproved = app.status == ApplicationStatus.APPROVED.name
-        val updated = app.copy(status = ApplicationStatus.WITHDRAWN.name)
+        val wasApproved = ApplicationStatus.fromApiValue(app.status) == ApplicationStatus.APPROVED
+        val updated = app.copy(
+            status = ApplicationStatus.WITHDRAWN.apiValue,
+            organizerContacts = null,
+            updatedAt = Instant.now().toString()
+        )
         applicationsState.update { list -> list.map { if (it.id == applicationId) updated else it } }
         if (wasApproved) {
             eventsState.update { events ->
                 events.map { event ->
                     if (event.id == app.eventId) {
-                        event.copy(approvedCount = (event.approvedCount - 1).coerceAtLeast(0))
+                        val newCount = (event.approvedVolunteersCount - 1).coerceAtLeast(0)
+                        val reopenedStatus = if (
+                            EventStatus.fromApiValue(event.status) == EventStatus.IN_PROGRESS &&
+                            newCount < event.volunteerQuota
+                        ) {
+                            EventStatus.OPEN.apiValue
+                        } else {
+                            event.status
+                        }
+                        event.copy(
+                            approvedVolunteersCount = newCount,
+                            status = reopenedStatus,
+                            progressText = "Підтверджено: $newCount з ${event.volunteerQuota}"
+                        )
                     } else {
                         event
                     }
@@ -532,20 +630,40 @@ class MockLocalInteractionDataSource @Inject constructor(
         delay(simulatedDelayMs)
         val app = applicationsState.value.find { it.id == applicationId }
             ?: return Result.failure(NoSuchElementException("Заявку не знайдено"))
-        val updated = app.copy(status = ApplicationStatus.APPROVED.name, rejectionReason = null)
+        val event = eventsState.value.find { it.id == app.eventId }
+        val organizerUser = usersState.value.find { it.id == event?.organizer?.id }
+        val updated = app.copy(
+            status = ApplicationStatus.APPROVED.apiValue,
+            rejectionReason = null,
+            organizerContacts = organizerUser?.let {
+                OrganizerContactsInfoDto(
+                    fullName = it.fullName,
+                    email = it.email,
+                    phone = it.phone
+                )
+            },
+            updatedAt = Instant.now().toString()
+        )
         applicationsState.update { list -> list.map { if (it.id == applicationId) updated else it } }
         eventsState.update { events ->
-            events.map { event ->
-                if (event.id == app.eventId) {
-                    val newCount = event.approvedCount + 1
-                    val newStatus = if (newCount >= event.volunteerQuota && event.status == EventStatus.OPEN.name) {
-                        EventStatus.IN_PROGRESS.name
+            events.map { currentEvent ->
+                if (currentEvent.id == app.eventId) {
+                    val newCount = currentEvent.approvedVolunteersCount + 1
+                    val newStatus = if (
+                        newCount >= currentEvent.volunteerQuota &&
+                        EventStatus.fromApiValue(currentEvent.status) == EventStatus.OPEN
+                    ) {
+                        EventStatus.IN_PROGRESS.apiValue
                     } else {
-                        event.status
+                        currentEvent.status
                     }
-                    event.copy(approvedCount = newCount, status = newStatus)
+                    currentEvent.copy(
+                        approvedVolunteersCount = newCount,
+                        status = newStatus,
+                        progressText = "Підтверджено: $newCount з ${currentEvent.volunteerQuota}"
+                    )
                 } else {
-                    event
+                    currentEvent
                 }
             }
         }
@@ -560,8 +678,10 @@ class MockLocalInteractionDataSource @Inject constructor(
         val app = applicationsState.value.find { it.id == applicationId }
             ?: return Result.failure(NoSuchElementException("Заявку не знайдено"))
         val updated = app.copy(
-            status = ApplicationStatus.REJECTED.name,
-            rejectionReason = reason.trim()
+            status = ApplicationStatus.REJECTED.apiValue,
+            rejectionReason = reason.trim(),
+            organizerContacts = null,
+            updatedAt = Instant.now().toString()
         )
         applicationsState.update { list -> list.map { if (it.id == applicationId) updated else it } }
         return Result.success(updated)
@@ -583,13 +703,14 @@ class MockLocalInteractionDataSource @Inject constructor(
         }
         val event = eventsState.value.find { it.id == eventId }
             ?: return Result.failure(NoSuchElementException("Захід не знайдено"))
-        if (event.status != EventStatus.IN_PROGRESS.name && event.status != EventStatus.COMPLETED.name) {
+        val eventStatus = EventStatus.fromApiValue(event.status)
+        if (eventStatus != EventStatus.IN_PROGRESS && eventStatus != EventStatus.COMPLETED) {
             return Result.failure(
                 IllegalStateException("Оцінювання доступне лише для заходів у статусі «В процесі» або «Виконано»")
             )
         }
         val alreadyReviewed = reviewsState.value.any {
-            it.eventId == eventId && it.reviewerId == reviewer.id && it.targetUserId == targetUserId
+            it.eventId == eventId && it.authorId == reviewer.id && it.targetUserId == targetUserId
         }
         if (alreadyReviewed) {
             return Result.failure(
@@ -601,12 +722,12 @@ class MockLocalInteractionDataSource @Inject constructor(
             id = "review-${UUID.randomUUID()}",
             eventId = event.id,
             eventTitle = event.title,
-            reviewerId = reviewer.id,
-            reviewerName = reviewer.fullName,
+            authorId = reviewer.id,
+            authorName = reviewer.fullName ?: reviewer.email,
             targetUserId = targetUserId,
             rating = rating,
             comment = comment.trim(),
-            createdAtMillis = System.currentTimeMillis()
+            createdAt = Instant.now().toString()
         )
         reviewsState.update { listOf(review) + it }
         return Result.success(review)
@@ -626,7 +747,7 @@ class MockLocalInteractionDataSource @Inject constructor(
         val updated = current.copy(
             fullName = fullName.trim().ifBlank { current.fullName },
             phone = phone.trim(),
-            bio = bio.trim()
+            description = bio.trim()
         )
         currentUserState.value = updated
         usersState.update { users -> users.map { if (it.id == updated.id) updated else it } }
@@ -646,7 +767,8 @@ class MockLocalInteractionDataSource @Inject constructor(
         val currentEvent = eventsState.value.find { it.id == eventId }
             ?: return Result.failure(NoSuchElementException("Захід не знайдено"))
         val updated = currentEvent.copy(
-            status = EventStatus.CANCELLED.name,
+            status = EventStatus.CANCELLED.apiValue,
+            moderationStatus = ModerationStatus.REJECTED.apiValue,
             rejectionReason = reason.trim()
         )
         eventsState.update { list -> list.map { if (it.id == eventId) updated else it } }
@@ -699,9 +821,12 @@ class MockLocalInteractionDataSource @Inject constructor(
                 id = userId,
                 fullName = "Порушник",
                 email = "violator@example.com",
-                role = UserRole.VOLUNTEER.name
+                role = UserRole.VOLUNTEER.apiValue
             )
-        val blocked = target.copy(isBlocked = true, blockReason = reason.trim())
+        val blocked = target.copy(
+            status = UserStatus.BLOCKED.apiValue,
+            blockReason = reason.trim()
+        )
         usersState.update { list ->
             if (list.any { it.id == userId }) {
                 list.map { if (it.id == userId) blocked else it }
@@ -711,8 +836,8 @@ class MockLocalInteractionDataSource @Inject constructor(
         }
         eventsState.update { events ->
             events.map { event ->
-                if (event.organizerId == userId) {
-                    event.copy(status = EventStatus.CANCELLED.name)
+                if (event.organizer.id == userId) {
+                    event.copy(status = EventStatus.CANCELLED.apiValue)
                 } else {
                     event
                 }
