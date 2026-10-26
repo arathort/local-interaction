@@ -6,23 +6,23 @@ import com.arathort.localinteraction.domain.model.Review
 fun ReviewDto.toDomain(): Review = Review(
     id = id,
     eventId = eventId,
-    eventTitle = eventTitle,
-    reviewerId = reviewerId,
-    reviewerName = reviewerName,
-    targetUserId = targetUserId,
+    authorId = authorId,
+    authorName = authorName,
     rating = rating,
     comment = comment,
-    createdAtMillis = createdAtMillis
+    createdAt = createdAt,
+    targetUserId = targetUserId,
+    eventTitle = eventTitle
 )
 
 fun Review.toDto(): ReviewDto = ReviewDto(
     id = id,
     eventId = eventId,
-    eventTitle = eventTitle,
-    reviewerId = reviewerId,
-    reviewerName = reviewerName,
-    targetUserId = targetUserId,
+    authorId = authorId,
+    authorName = authorName,
     rating = rating,
     comment = comment,
-    createdAtMillis = createdAtMillis
+    createdAt = createdAt,
+    targetUserId = targetUserId,
+    eventTitle = eventTitle
 )

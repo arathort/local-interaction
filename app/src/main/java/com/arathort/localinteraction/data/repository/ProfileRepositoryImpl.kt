@@ -27,6 +27,6 @@ class ProfileRepositoryImpl @Inject constructor(
 
     override fun observeOrganizerEvents(organizerId: String): Flow<List<Event>> =
         dataSource.observeEvents().map { list ->
-            list.filter { it.organizerId == organizerId }.map { it.toDomain() }
+            list.filter { it.organizer.id == organizerId }.map { it.toDomain() }
         }
 }

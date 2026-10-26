@@ -45,6 +45,7 @@ import com.arathort.localinteraction.domain.model.Category
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
+import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.presentation.util.Dimensions
@@ -79,7 +80,7 @@ fun HomeRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     state: HomeState,
@@ -98,7 +99,11 @@ fun HomeScreen(
                         }
                     } else {
                         TextButton(onClick = { onEvent(HomeEvent.NavigateToProfileClicked) }) {
-                            Text(text = state.currentUser.fullName.ifBlank { stringResource(R.string.profile_title) })
+                            Text(
+                                text = state.currentUser.fullName
+                                    .orEmpty()
+                                    .ifBlank { stringResource(R.string.profile_title) }
+                            )
                         }
                     }
                 }
@@ -250,7 +255,7 @@ fun EventSummaryCard(
             )
             Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
             Text(
-                text = event.address,
+                text = event.location.address,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -258,7 +263,7 @@ fun EventSummaryCard(
             LinearProgressIndicator(
                 progress = {
                     if (event.volunteerQuota > 0) {
-                        (event.approvedCount.toFloat() / event.volunteerQuota.toFloat()).coerceIn(0f, 1f)
+                        (event.approvedVolunteersCount.toFloat() / event.volunteerQuota.toFloat()).coerceIn(0f, 1f)
                     } else {
                         0f
                     }
@@ -269,7 +274,7 @@ fun EventSummaryCard(
             Text(
                 text = stringResource(
                     R.string.home_quota_progress,
-                    event.approvedCount,
+                    event.approvedVolunteersCount,
                     event.volunteerQuota
                 ),
                 style = MaterialTheme.typography.labelMedium
@@ -302,13 +307,19 @@ private fun HomeScreenPreview() {
                         categoryId = "cat-eco",
                         categoryName = "Екологія та довкілля",
                         status = EventStatus.OPEN,
-                        dateTimeMillis = 1793437200000L,
-                        address = "м. Київ, Оболонська набережна, 9",
-                        location = GeoPoint(50.5010, 30.5194),
+                        eventDate = "2026-10-31T10:00:00Z",
+                        location = GeoPoint(
+                            latitude = 50.5010,
+                            longitude = 30.5194,
+                            address = "м. Київ, Оболонська набережна, 9"
+                        ),
                         volunteerQuota = 25,
-                        approvedCount = 8,
-                        organizerId = "user-organizer-1",
-                        organizerName = "Тарас Мельник"
+                        approvedVolunteersCount = 8,
+                        organizer = OrganizerShortInfo(
+                            id = "user-organizer-1",
+                            fullName = "Тарас Мельник",
+                            rating = 4.8
+                        )
                     )
                 ),
                 isLoading = false
