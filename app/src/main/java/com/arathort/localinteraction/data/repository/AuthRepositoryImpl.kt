@@ -1,24 +1,40 @@
 package com.arathort.localinteraction.data.repository
 
-import com.arathort.localinteraction.data.datasource.LocalInteractionDataSource
+import com.arathort.localinteraction.data.datasource.local.TokenStorage
+import com.arathort.localinteraction.data.datasource.remote.JwtTokenManager
+import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiService
+import com.arathort.localinteraction.data.dto.UserCreateDto
 import com.arathort.localinteraction.data.mapper.toDomain
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    private val dataSource: LocalInteractionDataSource
+    private val apiService: LocalInteractionApiService,
+    private val tokenStorage: TokenStorage,
+    private val jwtTokenManager: JwtTokenManager
 ) : AuthRepository {
 
-    override val currentUser: Flow<User> = dataSource.currentUser.map { it.toDomain() }
+    private val guestUser = User(id = "user-guest", role = UserRole.GUEST)
+    private val _currentUser = MutableStateFlow(guestUser)
+    override val currentUser: Flow<User> = _currentUser.asStateFlow()
 
-    override suspend fun login(email: String, password: String): Result<User> =
-        dataSource.login(email, password).map { it.toDomain() }
+    override suspend fun login(email: String, password: String): Result<User> = runCatching {
+        val trimmedEmail = email.trim()
+        val tokenDto = apiService.login(username = trimmedEmail, password = password)
+        tokenStorage.saveAccessToken(tokenDto.accessToken)
+        jwtTokenManager.updateToken(tokenDto.accessToken)
+        val profile = apiService.getMyProfile().toDomain()
+        _currentUser.value = profile
+        profile
+    }
 
     override suspend fun register(
         fullName: String,
@@ -26,13 +42,42 @@ class AuthRepositoryImpl @Inject constructor(
         password: String,
         role: UserRole,
         acceptedPrivacyPolicy: Boolean
-    ): Result<User> =
-        dataSource.register(fullName, email, password, role, acceptedPrivacyPolicy).map { it.toDomain() }
-
-    override suspend fun logout() {
-        dataSource.logout()
+    ): Result<User> = runCatching {
+        val trimmedEmail = email.trim()
+        val request = UserCreateDto(
+            email = trimmedEmail,
+            password = password,
+            passwordConfirm = password,
+            role = role.apiValue,
+            agreedToRules = acceptedPrivacyPolicy
+        )
+        apiService.register(request)
+        login(trimmedEmail, password).getOrThrow()
     }
 
-    override suspend fun switchDemoRole(role: UserRole): Result<User> =
-        dataSource.switchDemoRole(role).map { it.toDomain() }
+    override suspend fun logout(): Result<Unit> = runCatching {
+        runCatching { apiService.logout() }
+        tokenStorage.clearAccessToken()
+        jwtTokenManager.clearToken()
+        _currentUser.value = guestUser
+    }
+
+    override suspend fun restoreSession(): Result<User?> = runCatching {
+        val savedToken = tokenStorage.accessTokenFlow.firstOrNull()
+        if (!savedToken.isNullOrBlank()) {
+            jwtTokenManager.updateToken(savedToken)
+            runCatching {
+                val profile = apiService.getMyProfile().toDomain()
+                _currentUser.value = profile
+                profile
+            }.getOrElse {
+                tokenStorage.clearAccessToken()
+                jwtTokenManager.clearToken()
+                _currentUser.value = guestUser
+                null
+            }
+        } else {
+            null
+        }
+    }
 }

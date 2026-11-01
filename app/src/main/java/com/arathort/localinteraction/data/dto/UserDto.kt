@@ -40,6 +40,14 @@ data class UserCreateDto(
 )
 
 @Serializable
+data class UserResponseDto(
+    @SerialName("id") val id: String,
+    @SerialName("email") val email: String,
+    @SerialName("role") val role: String,
+    @SerialName("status") val status: String
+)
+
+@Serializable
 data class ProfileUpdateDto(
     @SerialName("full_name") val fullName: String,
     @SerialName("phone") val phone: String? = null,

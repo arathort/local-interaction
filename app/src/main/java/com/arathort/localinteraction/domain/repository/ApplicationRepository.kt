@@ -6,7 +6,12 @@ import kotlinx.coroutines.flow.Flow
 interface ApplicationRepository {
     fun observeApplicationsForEvent(eventId: String): Flow<List<VolunteerApplication>>
     fun observeMyApplications(): Flow<List<VolunteerApplication>>
-    suspend fun submitApplication(eventId: String, motivationLetter: String): Result<VolunteerApplication>
+    suspend fun getMyApplications(): Result<List<VolunteerApplication>>
+    suspend fun submitApplication(
+        eventId: String,
+        motivationLetter: String,
+        agreedToShareContacts: Boolean = true
+    ): Result<VolunteerApplication>
     suspend fun withdrawApplication(applicationId: String): Result<VolunteerApplication>
     suspend fun approveApplication(applicationId: String): Result<VolunteerApplication>
     suspend fun rejectApplication(applicationId: String, reason: String): Result<VolunteerApplication>

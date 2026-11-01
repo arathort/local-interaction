@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.sp
 
 object Dimensions {
     val cardElevation = 2.dp
+    val cardCornerRadius = 12.dp
 
     val paddingExtraSmall = 4.dp
     val paddingSmall = 8.dp
@@ -21,4 +22,17 @@ object Dimensions {
     val textSizeBodyLarge = 16.sp
     val lineHeightBodyLarge = 24.sp
     val letterSpacingBodyLarge = 0.5.sp
+
+    val buttonHeight = 48.dp
+    val authHeaderSpacing = 32.dp
+    val progressIndicatorSize = 24.dp
+    val progressIndicatorStrokeWidth = 2.dp
+    val iconSmall = 20.dp
+    val iconMedium = 24.dp
+    val formMaxWidth = 420.dp
+
+    val eventDetailsImageHeight = 220.dp
+    val eventDetailsPhotoSize = 100.dp
+    val avatarMedium = 48.dp
+    val avatarLarge = 64.dp
 }

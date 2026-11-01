@@ -116,25 +116,6 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(horizontal = Dimensions.paddingLarge)
         ) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
-            ) {
-                UserRole.entries.forEach { role ->
-                    val roleLabel = when (role) {
-                        UserRole.GUEST -> stringResource(R.string.role_guest)
-                        UserRole.VOLUNTEER -> stringResource(R.string.role_volunteer)
-                        UserRole.ORGANIZER -> stringResource(R.string.role_organizer)
-                        UserRole.ADMIN -> stringResource(R.string.role_admin)
-                    }
-                    FilterChip(
-                        selected = state.currentUser.role == role,
-                        onClick = { onEvent(HomeEvent.RoleSwitched(role)) },
-                        label = { Text(text = roleLabel) }
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
 
             OutlinedTextField(

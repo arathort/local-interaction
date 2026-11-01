@@ -20,6 +20,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.arathort.localinteraction.R
+import com.arathort.localinteraction.presentation.auth.AuthRoute
+import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
 import com.arathort.localinteraction.presentation.home.HomeRoute
 import com.arathort.localinteraction.presentation.util.Dimensions
 
@@ -58,17 +60,18 @@ fun AppNavigation(
             }
 
             entry<AppDestination.EventDetails> { key ->
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.event_details_title),
-                    subtitle = key.eventId,
-                    onBack = { backStack.removeLastOrNull() }
+                EventDetailsRoute(
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToAuth = { backStack.add(AppDestination.Auth) },
+                    onNavigateToManageApplications = { eventId ->
+                        backStack.add(AppDestination.ManageApplications(eventId))
+                    }
                 )
             }
 
             entry<AppDestination.Auth> {
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.auth_tab_login),
-                    subtitle = stringResource(R.string.auth_select_role_label),
+                AuthRoute(
+                    onSuccess = { backStack.removeLastOrNull() },
                     onBack = { backStack.removeLastOrNull() }
                 )
             }

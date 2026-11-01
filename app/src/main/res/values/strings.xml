@@ -58,6 +58,8 @@
     <string name="auth_confirm_password_label">Підтвердження пароля</string>
     <string name="auth_full_name_label">ПІБ</string>
     <string name="auth_toggle_password_visibility">Показати або приховати пароль</string>
+    <string name="action_show_password">Показати</string>
+    <string name="action_hide_password">Приховати</string>
     <string name="auth_forgot_password">Забули пароль?</string>
     <string name="auth_login_button">Увійти</string>
     <string name="auth_register_button">Зареєструватися</string>
@@ -132,4 +134,21 @@
     <string name="error_rejection_reason_required">Вкажіть причину відхилення</string>
     <string name="error_block_reason_required">Вкажіть причину блокування</string>
     <string name="error_unauthorized_guest">Увійдіть або зареєструйтеся для виконання цієї дії</string>
+    <string name="auth_login_success">Успішний вхід</string>
+    <string name="auth_register_success">Успішна реєстрація</string>
+    <string name="error_auth_invalid_credentials">Невірний email або пароль</string>
+    <string name="error_network">Помилка мережі. Перевірте з\'єднання</string>
+    <string name="error_unknown">Сталася невідома помилка</string>
+    <string name="event_details_application_submitted">Заявку успішно надіслано</string>
+    <string name="event_details_application_withdrawn">Заявку відкликано</string>
+    <string name="event_details_status_updated">Статус заходу оновлено</string>
+    <string name="event_details_share_contacts_consent">Я погоджуюся на передачу контактних даних організатору у разі схвалення</string>
+    <string name="event_details_my_application_status">Статус вашої заявки: %1$s</string>
+    <string name="event_details_about_section">Опис заходу</string>
+    <string name="event_details_photos_section">Галерея</string>
+    <string name="event_details_quota_format">Зібрано %1$d з %2$d волонтерів</string>
+    <string name="event_details_select_status">Оберіть новий статус заходу</string>
+    <string name="event_details_apply_dialog_title">Подача заявки на участь</string>
+    <string name="event_details_empty_comments">Коментарів поки що немає</string>
+    <string name="event_details_not_found">Захід не знайдено</string>
 </resources>

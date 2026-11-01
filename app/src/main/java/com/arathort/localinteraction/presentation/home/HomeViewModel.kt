@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.domain.usecase.ObserveCategoriesUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveOpenEventsUseCase
-import com.arathort.localinteraction.domain.usecase.SwitchDemoRoleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -26,8 +25,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     observeOpenEventsUseCase: ObserveOpenEventsUseCase,
     observeCategoriesUseCase: ObserveCategoriesUseCase,
-    observeCurrentUserUseCase: ObserveCurrentUserUseCase,
-    private val switchDemoRoleUseCase: SwitchDemoRoleUseCase
+    observeCurrentUserUseCase: ObserveCurrentUserUseCase
 ) : ViewModel() {
 
     private val searchQueryFlow = MutableStateFlow("")
@@ -92,11 +90,6 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.EventClicked -> {
                 viewModelScope.launch {
                     effectChannel.send(HomeEffect.NavigateToEventDetails(event.eventId))
-                }
-            }
-            is HomeEvent.RoleSwitched -> {
-                viewModelScope.launch {
-                    switchDemoRoleUseCase(event.role)
                 }
             }
             HomeEvent.NavigateToAuthClicked -> {
