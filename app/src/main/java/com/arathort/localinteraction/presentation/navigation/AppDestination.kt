@@ -16,7 +16,7 @@ sealed interface AppDestination : NavKey {
     data object Auth : AppDestination
 
     @Serializable
-    data object Profile : AppDestination
+    data class Profile(val userId: String? = null) : AppDestination
 
     @Serializable
     data class CreateEditEvent(val eventId: String? = null) : AppDestination

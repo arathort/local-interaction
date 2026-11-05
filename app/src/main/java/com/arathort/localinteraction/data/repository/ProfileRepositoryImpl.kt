@@ -16,6 +16,10 @@ class ProfileRepositoryImpl @Inject constructor(
     private val apiService: LocalInteractionApiService
 ) : ProfileRepository {
 
+    override suspend fun getMyProfile(): Result<User> = runCatching {
+        apiService.getMyProfile().toDomain()
+    }
+
     override suspend fun getUserProfile(userId: String): Result<User> = runCatching {
         apiService.getUserPublicProfile(userId).toDomain()
     }
