@@ -68,6 +68,7 @@ fun EventDetailsRoute(
     onNavigateToAuth: () -> Unit,
     onNavigateToManageApplications: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToProfile: (String) -> Unit = {},
     viewModel: EventDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -98,6 +99,7 @@ fun EventDetailsRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBackClicked = onBack,
+        onOrganizerClicked = { state.event?.organizer?.id?.let(onNavigateToProfile) },
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -110,6 +112,7 @@ fun EventDetailsScreen(
     onEvent: (EventDetailsEvent) -> Unit,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit = { onEvent(EventDetailsEvent.BackClicked) },
+    onOrganizerClicked: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -169,6 +172,7 @@ fun EventDetailsScreen(
             else -> {
                 EventDetailsContent(
                     event = state.event,
+                    onOrganizerClicked = onOrganizerClicked,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
@@ -189,7 +193,8 @@ fun EventDetailsScreen(
 @Composable
 private fun EventDetailsContent(
     event: Event,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOrganizerClicked: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -236,7 +241,10 @@ private fun EventDetailsContent(
 
         Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
-        OrganizerCard(organizer = event.organizer)
+        OrganizerCard(
+            organizer = event.organizer,
+            onClick = onOrganizerClicked
+        )
 
         Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
 
@@ -336,9 +344,11 @@ private fun QuotaProgressCard(
 @Composable
 private fun OrganizerCard(
     organizer: OrganizerShortInfo,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.cardElevation)
     ) {

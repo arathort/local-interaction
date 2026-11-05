@@ -23,6 +23,7 @@ import com.arathort.localinteraction.R
 import com.arathort.localinteraction.presentation.auth.AuthRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
 import com.arathort.localinteraction.presentation.home.HomeRoute
+import com.arathort.localinteraction.presentation.profile.ProfileRoute
 import com.arathort.localinteraction.presentation.util.Dimensions
 
 @Composable
@@ -48,7 +49,7 @@ fun AppNavigation(
                         backStack.add(AppDestination.Auth)
                     },
                     onNavigateToProfile = {
-                        backStack.add(AppDestination.Profile)
+                        backStack.add(AppDestination.Profile())
                     },
                     onNavigateToCreateEvent = {
                         backStack.add(AppDestination.CreateEditEvent())
@@ -65,6 +66,9 @@ fun AppNavigation(
                     onNavigateToAuth = { backStack.add(AppDestination.Auth) },
                     onNavigateToManageApplications = { eventId ->
                         backStack.add(AppDestination.ManageApplications(eventId))
+                    },
+                    onNavigateToProfile = { userId ->
+                        backStack.add(AppDestination.Profile(userId))
                     }
                 )
             }
@@ -76,11 +80,14 @@ fun AppNavigation(
                 )
             }
 
-            entry<AppDestination.Profile> {
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.profile_title),
-                    subtitle = stringResource(R.string.profile_tab_my_tasks),
-                    onBack = { backStack.removeLastOrNull() }
+            entry<AppDestination.Profile> { key ->
+                ProfileRoute(
+                    userId = key.userId,
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToAuth = { backStack.add(AppDestination.Auth) },
+                    onNavigateToEventDetails = { eventId ->
+                        backStack.add(AppDestination.EventDetails(eventId))
+                    }
                 )
             }
 

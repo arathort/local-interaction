@@ -35,4 +35,8 @@ object Dimensions {
     val eventDetailsPhotoSize = 100.dp
     val avatarMedium = 48.dp
     val avatarLarge = 64.dp
+    val avatarExtraLarge = 80.dp
+    val starRatingSmall = 16.dp
+    val starRatingMedium = 20.dp
+    val profileHeaderPadding = 20.dp
 }
