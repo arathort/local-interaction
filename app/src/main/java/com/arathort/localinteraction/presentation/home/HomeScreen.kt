@@ -19,6 +19,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -108,6 +109,15 @@ fun HomeScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            if (state.currentUser.role == UserRole.ORGANIZER) {
+                ExtendedFloatingActionButton(
+                    onClick = { onEvent(HomeEvent.NavigateToCreateEventClicked) }
+                ) {
+                    Text(text = stringResource(R.string.home_create_event_fab))
+                }
+            }
         }
     ) { innerPadding ->
         Column(

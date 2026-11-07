@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.presentation.auth.AuthRoute
+import com.arathort.localinteraction.presentation.create_event.CreateEventRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
 import com.arathort.localinteraction.presentation.home.HomeRoute
 import com.arathort.localinteraction.presentation.profile.ProfileRoute
@@ -92,10 +93,11 @@ fun AppNavigation(
             }
 
             entry<AppDestination.CreateEditEvent> {
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.create_event_title),
-                    subtitle = stringResource(R.string.event_form_submit_moderation),
-                    onBack = { backStack.removeLastOrNull() }
+                CreateEventRoute(
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToEventDetails = { eventId ->
+                        backStack.add(AppDestination.EventDetails(eventId))
+                    }
                 )
             }
 

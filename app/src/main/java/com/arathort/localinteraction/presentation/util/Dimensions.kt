@@ -39,4 +39,7 @@ object Dimensions {
     val starRatingSmall = 16.dp
     val starRatingMedium = 20.dp
     val profileHeaderPadding = 20.dp
+    val mapPickerHeight = 360.dp
+    val photoThumbnailSize = 72.dp
+    val fabElevation = 4.dp
 }

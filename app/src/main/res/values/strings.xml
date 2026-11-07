@@ -111,6 +111,20 @@
     <string name="event_form_quota_label">Квота волонтерів</string>
     <string name="event_form_pick_photos">Обрати фотографії з галереї</string>
     <string name="event_form_submit_moderation">Створити (відправити на розгляд)</string>
+    <string name="home_create_event_fab">Створити захід</string>
+    <string name="event_create_success">Захід успішно створено та відправлено на модерацію</string>
+    <string name="event_form_select_category_placeholder">Оберіть категорію зі списку</string>
+    <string name="event_form_select_date_placeholder">Обрати дату та час проведення</string>
+    <string name="event_form_coordinates_label">Координати: %1$.5f, %2$.5f</string>
+    <string name="event_form_map_dialog_title">Вибір точки на карті</string>
+    <string name="event_form_confirm_location">Підтвердити точку</string>
+    <string name="event_form_add_photo">Додати фото</string>
+    <string name="event_form_photo_url_hint">Введіть URL зображення</string>
+    <string name="event_form_desc_counter_format">%1$d / 50 символів</string>
+    <string name="error_event_date_in_past">Дата заходу повинна бути у майбутньому</string>
+    <string name="error_event_title_length">Назва заходу має містити від 5 до 150 символів</string>
+    <string name="error_event_address_too_short">Вкажіть фізичну адресу (щонайменше 5 символів)</string>
+    <string name="error_only_organizers_can_create_events">Тільки організатори можуть створювати заходи</string>
 
     <string name="manage_applications_title">Управління заявками</string>
     <string name="manage_applications_confirmed_count">Підтверджено: %1$d з %2$d</string>

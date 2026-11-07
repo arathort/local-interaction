@@ -1,10 +1,10 @@
 package com.arathort.localinteraction.domain.model
 
 enum class UserRole(val apiValue: String) {
-    GUEST("Гість"),
-    VOLUNTEER("Волонтер"),
-    ORGANIZER("Організатор"),
-    ADMIN("Адміністратор");
+    GUEST("Guest"),
+    VOLUNTEER("Volunteer"),
+    ORGANIZER("Organizer"),
+    ADMIN("Admin");
 
     companion object {
         fun fromApiValue(value: String): UserRole =
