@@ -1,10 +1,8 @@
 package com.arathort.localinteraction.presentation.event_details
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
-import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
@@ -12,6 +10,9 @@ import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.SubmitApplicationUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateEventStatusUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,20 +21,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class EventDetailsViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = EventDetailsViewModel.Factory::class)
+class EventDetailsViewModel @AssistedInject constructor(
+    @Assisted private val eventId: String,
     private val getEventDetailsUseCase: GetEventDetailsUseCase,
     private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
     private val getMyApplicationsUseCase: GetMyApplicationsUseCase,
     private val submitApplicationUseCase: SubmitApplicationUseCase,
     private val withdrawApplicationUseCase: WithdrawApplicationUseCase,
-    private val updateEventStatusUseCase: UpdateEventStatusUseCase
+    private val updateEventStatusUseCase: UpdateEventStatusUseCase,
 ) : ViewModel() {
 
-    private val eventId: String = checkNotNull(savedStateHandle["eventId"])
+    @AssistedFactory
+    interface Factory {
+        fun create(eventId: String): EventDetailsViewModel
+    }
 
     private val _uiState = MutableStateFlow(EventDetailsState())
     val uiState: StateFlow<EventDetailsState> = _uiState.asStateFlow()

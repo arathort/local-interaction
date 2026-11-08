@@ -3,9 +3,9 @@ package com.arathort.localinteraction.domain.model
 enum class EventStatus(val apiValue: String) {
     PENDING_MODERATION("Очікує модерації"),
     OPEN("Відкрито"),
-    IN_PROGRESS("В процесі"),
-    COMPLETED("Виконано"),
-    CANCELLED("Скасовано");
+    IN_PROGRESS("In Process"),
+    COMPLETED("Completed"),
+    CANCELLED("Cancelled");
 
     companion object {
         fun fromApiValue(value: String): EventStatus =

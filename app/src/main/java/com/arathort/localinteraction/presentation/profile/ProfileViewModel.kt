@@ -1,6 +1,5 @@
 package com.arathort.localinteraction.presentation.profile
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
@@ -13,6 +12,9 @@ import com.arathort.localinteraction.domain.usecase.LogoutUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateProfileUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -23,11 +25,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class ProfileViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = ProfileViewModel.Factory::class)
+class ProfileViewModel @AssistedInject constructor(
+    @Assisted private val targetUserId: String?,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
@@ -37,7 +38,10 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    private val targetUserId: String? = savedStateHandle["userId"]
+    @AssistedFactory
+    interface Factory {
+        fun create(targetUserId: String?): ProfileViewModel
+    }
 
     private val _uiState = MutableStateFlow(ProfileState(isLoading = true))
     val uiState: StateFlow<ProfileState> = _uiState.asStateFlow()

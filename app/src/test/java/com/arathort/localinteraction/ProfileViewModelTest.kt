@@ -1,6 +1,5 @@
 package com.arathort.localinteraction
 
-import androidx.lifecycle.SavedStateHandle
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
@@ -140,9 +139,9 @@ class ProfileViewModelTest {
         override suspend fun rejectApplication(applicationId: String, reason: String) = Result.failure<VolunteerApplication>(UnsupportedOperationException())
     }
 
-    private fun createViewModel(savedStateHandle: SavedStateHandle = SavedStateHandle()): ProfileViewModel =
+    private fun createViewModel(targetUserId: String? = null): ProfileViewModel =
         ProfileViewModel(
-            savedStateHandle = savedStateHandle,
+            targetUserId = targetUserId,
             getMyProfileUseCase = GetMyProfileUseCase(fakeProfileRepository),
             getUserProfileUseCase = GetUserProfileUseCase(fakeProfileRepository),
             updateProfileUseCase = UpdateProfileUseCase(fakeProfileRepository),
@@ -201,7 +200,7 @@ class ProfileViewModelTest {
 
     @Test
     fun `initial profile loads public profile when external userId is provided`() = runTest {
-        val viewModel = createViewModel(SavedStateHandle(mapOf("userId" to "user-external")))
+        val viewModel = createViewModel("user-external")
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.uiState.collect {}
         }

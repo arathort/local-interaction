@@ -1,6 +1,5 @@
 package com.arathort.localinteraction
 
-import androidx.lifecycle.SavedStateHandle
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.Event
@@ -117,8 +116,8 @@ class EventDetailsViewModelTest {
         override suspend fun restoreSession() = Result.success(null)
     }
 
-    private fun createViewModel(): EventDetailsViewModel = EventDetailsViewModel(
-        savedStateHandle = SavedStateHandle(mapOf("eventId" to "event-1")),
+    private fun createViewModel(eventId: String = "event-1"): EventDetailsViewModel = EventDetailsViewModel(
+        eventId = eventId,
         getEventDetailsUseCase = GetEventDetailsUseCase(fakeEventRepository),
         observeCurrentUserUseCase = ObserveCurrentUserUseCase(fakeAuthRepository),
         getMyApplicationsUseCase = GetMyApplicationsUseCase(fakeApplicationRepository),
