@@ -4,6 +4,7 @@ import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiS
 import com.arathort.localinteraction.data.dto.ApplicationCreateDto
 import com.arathort.localinteraction.data.dto.ApplicationReviewRequestDto
 import com.arathort.localinteraction.data.mapper.toDomain
+import com.arathort.localinteraction.domain.model.EventApplicationsManage
 import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,15 @@ class ApplicationRepositoryImpl @Inject constructor(
             response.toDomain().applications
         }.getOrDefault(emptyList())
         emit(applications)
+    }
+
+    override fun observeEventApplicationsManage(eventId: String): Flow<EventApplicationsManage> = flow {
+        val manage = apiService.getEventApplications(eventId).toDomain()
+        emit(manage)
+    }
+
+    override suspend fun getEventApplicationsManage(eventId: String): Result<EventApplicationsManage> = runCatching {
+        apiService.getEventApplications(eventId).toDomain()
     }
 
     override fun observeMyApplications(): Flow<List<VolunteerApplication>> = flow {

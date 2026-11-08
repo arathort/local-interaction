@@ -42,4 +42,5 @@ object Dimensions {
     val mapPickerHeight = 360.dp
     val photoThumbnailSize = 72.dp
     val fabElevation = 4.dp
+    val mapPreviewCardElevation = 6.dp
 }

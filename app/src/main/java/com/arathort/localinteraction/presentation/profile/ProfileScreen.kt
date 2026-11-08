@@ -21,6 +21,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -114,19 +117,26 @@ fun ProfileScreen(
             TopAppBar(
                 title = { Text(text = stringResource(R.string.profile_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBackClicked) {
-                        Text(text = stringResource(R.string.action_back))
+                    IconButton(onClick = onBackClicked) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 },
                 actions = {
                     if (state.isCurrentUser && !state.isGuest && state.user != null) {
-                        TextButton(onClick = { onEvent(ProfileEvent.EditProfileClicked) }) {
-                            Text(text = stringResource(R.string.profile_edit_action))
+                        IconButton(onClick = { onEvent(ProfileEvent.EditProfileClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_edit),
+                                contentDescription = stringResource(R.string.profile_edit_action)
+                            )
                         }
-                        TextButton(onClick = { onEvent(ProfileEvent.LogoutClicked) }) {
-                            Text(
-                                text = stringResource(R.string.profile_logout_action),
-                                color = MaterialTheme.colorScheme.error
+                        IconButton(onClick = { onEvent(ProfileEvent.LogoutClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_logout),
+                                contentDescription = stringResource(R.string.profile_logout_action),
+                                tint = MaterialTheme.colorScheme.error
                             )
                         }
                     }
@@ -396,17 +406,32 @@ private fun ProfileHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
             ) {
-                val ratingFormatted = if (user.rating > 0.0) {
-                    stringResource(R.string.event_details_rating_format, user.rating)
+                if (user.rating > 0.0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_star),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.starRatingMedium),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.event_details_rating_format, user.rating),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 } else {
-                    "—"
+                    Text(
+                        text = "—",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
-                Text(
-                    text = ratingFormatted,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
                 Text(
                     text = stringResource(R.string.profile_rating_count_format, user.reviews.size),
                     style = MaterialTheme.typography.bodySmall,
@@ -500,12 +525,23 @@ private fun ProfileReviewCard(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    text = stringResource(R.string.event_details_rating_format, review.rating.toDouble()),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.starRatingSmall),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = stringResource(R.string.event_details_rating_format, review.rating.toDouble()),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             if (!review.comment.isNullOrBlank()) {

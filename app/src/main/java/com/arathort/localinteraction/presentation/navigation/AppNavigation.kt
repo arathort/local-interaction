@@ -26,6 +26,8 @@ import com.arathort.localinteraction.presentation.create_event.CreateEventRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsViewModel
 import com.arathort.localinteraction.presentation.home.HomeRoute
+import com.arathort.localinteraction.presentation.manage_applications.ManageApplicationsRoute
+import com.arathort.localinteraction.presentation.manage_applications.ManageApplicationsViewModel
 import com.arathort.localinteraction.presentation.profile.ProfileRoute
 import com.arathort.localinteraction.presentation.profile.ProfileViewModel
 import com.arathort.localinteraction.presentation.util.Dimensions
@@ -113,10 +115,15 @@ fun AppNavigation(
             }
 
             entry<AppDestination.ManageApplications> { key ->
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.manage_applications_title),
-                    subtitle = key.eventId,
-                    onBack = { backStack.removeLastOrNull() }
+                val viewModel = hiltViewModel<ManageApplicationsViewModel, ManageApplicationsViewModel.Factory>(
+                    creationCallback = { factory -> factory.create(key.eventId) }
+                )
+                ManageApplicationsRoute(
+                    viewModel = viewModel,
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToVolunteerProfile = { volunteerId ->
+                        backStack.add(AppDestination.Profile(volunteerId))
+                    }
                 )
             }
 

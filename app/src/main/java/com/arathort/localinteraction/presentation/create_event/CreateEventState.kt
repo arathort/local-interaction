@@ -18,7 +18,6 @@ data class CreateEventState(
     val tempMapLatitude: Double = 50.4501,
     val tempMapLongitude: Double = 30.5234,
     val volunteerQuotaText: String = "5",
-    val photoUrlInput: String = "",
     val photoUrls: List<String> = emptyList(),
     val showDatePicker: Boolean = false,
     val showMapPickerDialog: Boolean = false,

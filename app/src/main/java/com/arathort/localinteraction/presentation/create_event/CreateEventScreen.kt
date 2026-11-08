@@ -1,5 +1,11 @@
 package com.arathort.localinteraction.presentation.create_event
 
+import android.graphics.ImageDecoder
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +34,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -44,7 +52,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -109,6 +120,13 @@ fun CreateEventScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val scrollState = rememberScrollState()
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 5)
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            onEvent(CreateEventEvent.PhotosSelected(uris.map { it.toString() }))
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -117,8 +135,11 @@ fun CreateEventScreen(
             TopAppBar(
                 title = { Text(text = stringResource(R.string.create_event_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBackClicked) {
-                        Text(text = stringResource(R.string.action_back))
+                    IconButton(onClick = onBackClicked) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 }
             )
@@ -212,6 +233,12 @@ fun CreateEventScreen(
                 onClick = { onEvent(CreateEventEvent.ShowDatePickerClicked) },
                 modifier = Modifier.fillMaxWidth()
             ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_calendar),
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSmall)
+                )
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                 Text(text = formattedDate)
             }
 
@@ -257,6 +284,12 @@ fun CreateEventScreen(
                         onClick = { onEvent(CreateEventEvent.OpenMapPickerClicked) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_location),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.iconSmall)
+                        )
+                        Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
                         Text(text = stringResource(R.string.event_form_pick_location))
                     }
                 }
@@ -281,51 +314,30 @@ fun CreateEventScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
-                verticalAlignment = Alignment.CenterVertically
+            OutlinedButton(
+                onClick = {
+                    photoPickerLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
-                    value = state.photoUrlInput,
-                    onValueChange = { onEvent(CreateEventEvent.PhotoUrlInputChanged(it)) },
-                    label = { Text(text = stringResource(R.string.event_form_photo_url_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f)
+                Icon(
+                    painter = painterResource(R.drawable.ic_photo_library),
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSmall)
                 )
-                Button(
-                    onClick = { onEvent(CreateEventEvent.AddPhotoUrlClicked) },
-                    enabled = state.photoUrlInput.isNotBlank()
-                ) {
-                    Text(text = stringResource(R.string.event_form_add_photo))
-                }
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                Text(text = stringResource(R.string.event_form_pick_photos))
             }
 
             if (state.photoUrls.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)) {
                     items(state.photoUrls) { photoUrl ->
-                        Card(
-                            shape = RoundedCornerShape(Dimensions.cardCornerRadius),
-                            modifier = Modifier.size(Dimensions.photoThumbnailSize)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(Dimensions.paddingExtraSmall),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = photoUrl.takeLast(10),
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                TextButton(
-                                    onClick = { onEvent(CreateEventEvent.RemovePhotoClicked(photoUrl)) },
-                                    modifier = Modifier.align(Alignment.TopEnd)
-                                ) {
-                                    Text(text = "✕", color = MaterialTheme.colorScheme.error)
-                                }
-                            }
-                        }
+                        GalleryPhotoThumbnail(
+                            photoUri = photoUrl,
+                            onRemove = { onEvent(CreateEventEvent.RemovePhotoClicked(photoUrl)) }
+                        )
                     }
                 }
             }
@@ -400,6 +412,65 @@ fun CreateEventScreen(
             onConfirm = { onEvent(CreateEventEvent.ConfirmMapCoordinatesClicked) },
             onDismiss = { onEvent(CreateEventEvent.DismissMapPicker) }
         )
+    }
+}
+
+@Composable
+private fun GalleryPhotoThumbnail(
+    photoUri: String,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val imageBitmap = remember(photoUri) {
+        runCatching {
+            val uri = Uri.parse(photoUri)
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                decoder.setTargetSampleSize(2)
+            }.asImageBitmap()
+        }.getOrNull()
+    }
+
+    Card(
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+        modifier = modifier.size(Dimensions.photoThumbnailSize)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (imageBitmap != null) {
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_photo_library),
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.iconMedium),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(Dimensions.iconMedium)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_close),
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(Dimensions.iconSmall)
+                )
+            }
+        }
     }
 }
 

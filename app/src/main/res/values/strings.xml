@@ -34,12 +34,15 @@
     <string name="home_filter_categories">Категорії</string>
     <string name="home_all_categories">Усі категорії</string>
     <string name="home_empty_events">Відкритих заходів за обраними критеріями не знайдено</string>
+    <string name="home_map_empty_events">У цій зоні або за обраними фільтрами заходів не знайдено</string>
+    <string name="home_map_event_details_action">Детальніше про захід</string>
+    <string name="home_map_close_preview_cd">Закрити попередній перегляд заходу</string>
     <string name="home_quota_progress">Зібрано %1$d з %2$d</string>
     <string name="home_load_more">Завантажити ще</string>
 
     <string name="event_details_title">Деталі заходу</string>
     <string name="event_details_organizer_section">Організатор</string>
-    <string name="event_details_rating_format">★ %1$.1f</string>
+    <string name="event_details_rating_format">%1$.1f</string>
     <string name="event_details_contacts_label">Контактний телефон: %1$s</string>
     <string name="event_details_comments_section">Коментарі (%1$d)</string>
     <string name="event_details_comment_hint">Напишіть коментар…</string>
@@ -132,6 +135,24 @@
     <string name="manage_applications_reject">Відхилити</string>
     <string name="manage_applications_reject_reason_hint">Вкажіть причину відхилення заявки…</string>
     <string name="manage_applications_empty">Заявок на цей захід поки немає</string>
+    <string name="manage_applications_empty_filter">Заявок за обраним статусом не знайдено</string>
+    <string name="manage_applications_filter_all">Усі (%1$d)</string>
+    <string name="manage_applications_filter_pending">Очікують (%1$d)</string>
+    <string name="manage_applications_filter_approved">Схвалені (%1$d)</string>
+    <string name="manage_applications_filter_rejected">Відхилені (%1$d)</string>
+    <string name="manage_applications_filter_withdrawn">Відкликані (%1$d)</string>
+    <string name="manage_applications_approve_success">Заявку волонтера успішно схвалено</string>
+    <string name="manage_applications_reject_success">Заявку відхилено</string>
+    <string name="manage_applications_quota_warning_title">Квоту заповнено</string>
+    <string name="manage_applications_quota_warning_message">Кількість підтверджених учасників уже досягла квоти (%1$d з %2$d). Ви дійсно бажаєте схвалити ще одного волонтера?</string>
+    <string name="manage_applications_quota_warning_confirm">Все одно схвалити</string>
+    <string name="manage_applications_reject_dialog_title">Відхилення заявки</string>
+    <string name="manage_applications_motivation_label">Мотиваційне повідомлення</string>
+    <string name="manage_applications_phone_label">Телефон: %1$s</string>
+    <string name="manage_applications_rejection_reason_label">Причина відхилення: %1$s</string>
+    <string name="manage_applications_applied_date_format">Подано: %1$s</string>
+    <string name="manage_applications_volunteer_profile_cd">Переглянути профіль волонтера</string>
+    <string name="error_only_organizer_can_manage_applications">Тільки організатор заходу може переглядати заявки</string>
 
     <string name="review_title">Оцінювання співпраці</string>
     <string name="review_subtitle">Захід: %1$s • Користувач: %2$s</string>

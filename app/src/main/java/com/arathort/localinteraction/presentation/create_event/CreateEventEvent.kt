@@ -13,8 +13,7 @@ sealed interface CreateEventEvent {
     data object ShowDatePickerClicked : CreateEventEvent
     data object DismissDatePicker : CreateEventEvent
     data class QuotaChanged(val value: String) : CreateEventEvent
-    data class PhotoUrlInputChanged(val value: String) : CreateEventEvent
-    data object AddPhotoUrlClicked : CreateEventEvent
+    data class PhotosSelected(val uris: List<String>) : CreateEventEvent
     data class RemovePhotoClicked(val photoUrl: String) : CreateEventEvent
     data object SubmitClicked : CreateEventEvent
     data object BackClicked : CreateEventEvent

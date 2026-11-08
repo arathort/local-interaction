@@ -30,6 +30,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -170,6 +172,45 @@ class HomeViewModelTest {
         viewModel.onEvent(HomeEvent.EventClicked("event-1"))
         val effect = viewModel.effects.first()
         assertEquals(HomeEffect.NavigateToEventDetails("event-1"), effect)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `selecting and dismissing map marker updates state correctly`() = runTest {
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onEvent(HomeEvent.ViewModeChanged(true))
+        assertNull(viewModel.state.value.selectedMapEventId)
+        assertNull(viewModel.state.value.selectedMapEvent)
+
+        viewModel.onEvent(HomeEvent.MapMarkerClicked("event-1"))
+        assertEquals("event-1", viewModel.state.value.selectedMapEventId)
+        assertNotNull(viewModel.state.value.selectedMapEvent)
+        assertEquals("Прибирання парку", viewModel.state.value.selectedMapEvent?.title)
+
+        viewModel.onEvent(HomeEvent.MapDismissPreviewClicked)
+        assertNull(viewModel.state.value.selectedMapEventId)
+        assertNull(viewModel.state.value.selectedMapEvent)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `switching view mode to list clears selected map marker`() = runTest {
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onEvent(HomeEvent.ViewModeChanged(true))
+        viewModel.onEvent(HomeEvent.MapMarkerClicked("event-2"))
+        assertEquals("event-2", viewModel.state.value.selectedMapEventId)
+
+        viewModel.onEvent(HomeEvent.ViewModeChanged(false))
+        assertFalse(viewModel.state.value.isMapView)
+        assertNull(viewModel.state.value.selectedMapEventId)
 
         collectJob.cancel()
     }

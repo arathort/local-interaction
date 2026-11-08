@@ -67,8 +67,11 @@ class CreateEventViewModel @Inject constructor(
             CreateEventEvent.ShowDatePickerClicked -> _uiState.update { it.copy(showDatePicker = true) }
             CreateEventEvent.DismissDatePicker -> _uiState.update { it.copy(showDatePicker = false) }
             is CreateEventEvent.QuotaChanged -> _uiState.update { it.copy(volunteerQuotaText = event.value, quotaErrorResId = null) }
-            is CreateEventEvent.PhotoUrlInputChanged -> _uiState.update { it.copy(photoUrlInput = event.value) }
-            CreateEventEvent.AddPhotoUrlClicked -> addPhotoUrl()
+            is CreateEventEvent.PhotosSelected -> {
+                _uiState.update { state ->
+                    state.copy(photoUrls = (state.photoUrls + event.uris).distinct().take(10))
+                }
+            }
             is CreateEventEvent.RemovePhotoClicked -> removePhotoUrl(event.photoUrl)
             CreateEventEvent.SubmitClicked -> submitEvent()
             CreateEventEvent.BackClicked -> sendEffect(CreateEventEffect.NavigateBack)
@@ -97,18 +100,6 @@ class CreateEventViewModel @Inject constructor(
                         selectedCategoryId = state.selectedCategoryId ?: categories.firstOrNull()?.id
                     )
                 }
-            }
-        }
-    }
-
-    private fun addPhotoUrl() {
-        val trimmed = _uiState.value.photoUrlInput.trim()
-        if (trimmed.isNotBlank() && trimmed !in _uiState.value.photoUrls) {
-            _uiState.update {
-                it.copy(
-                    photoUrls = it.photoUrls + trimmed,
-                    photoUrlInput = ""
-                )
             }
         }
     }

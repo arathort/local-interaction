@@ -17,5 +17,9 @@ data class HomeState(
     val selectedCategoryIds: Set<String> = emptySet(),
     val searchQuery: String = "",
     val isMapView: Boolean = false,
+    val selectedMapEventId: String? = null,
     val isLoading: Boolean = true
-)
+) {
+    val selectedMapEvent: Event?
+        get() = events.find { it.id == selectedMapEventId }
+}
