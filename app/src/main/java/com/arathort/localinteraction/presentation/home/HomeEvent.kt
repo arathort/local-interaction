@@ -5,6 +5,8 @@ sealed interface HomeEvent {
     data class CategoryToggled(val categoryId: String) : HomeEvent
     data object ClearFilters : HomeEvent
     data class ViewModeChanged(val isMapView: Boolean) : HomeEvent
+    data class MapMarkerClicked(val eventId: String) : HomeEvent
+    data object MapDismissPreviewClicked : HomeEvent
     data class EventClicked(val eventId: String) : HomeEvent
     data object NavigateToAuthClicked : HomeEvent
     data object NavigateToProfileClicked : HomeEvent

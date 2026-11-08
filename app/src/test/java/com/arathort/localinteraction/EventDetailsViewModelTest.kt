@@ -3,6 +3,7 @@ package com.arathort.localinteraction
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.Event
+import com.arathort.localinteraction.domain.model.EventApplicationsManage
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
@@ -82,6 +83,8 @@ class EventDetailsViewModelTest {
 
     private val fakeApplicationRepository = object : ApplicationRepository {
         override fun observeApplicationsForEvent(eventId: String) = emptyFlow<List<VolunteerApplication>>()
+        override fun observeEventApplicationsManage(eventId: String) = emptyFlow<EventApplicationsManage>()
+        override suspend fun getEventApplicationsManage(eventId: String): Result<EventApplicationsManage> = Result.failure(UnsupportedOperationException())
         override fun observeMyApplications() = emptyFlow<List<VolunteerApplication>>()
         override suspend fun getMyApplications(): Result<List<VolunteerApplication>> = Result.success(emptyList())
         override suspend fun submitApplication(eventId: String, motivationLetter: String, agreedToShareContacts: Boolean): Result<VolunteerApplication> =

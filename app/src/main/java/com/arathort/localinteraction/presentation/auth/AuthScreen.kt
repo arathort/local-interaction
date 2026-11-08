@@ -17,6 +17,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
@@ -26,7 +28,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -109,8 +111,11 @@ fun AuthScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBackClicked) {
-                        Text(text = stringResource(R.string.action_back))
+                    IconButton(onClick = onBackClicked) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 }
             )
@@ -195,9 +200,16 @@ private fun LoginForm(
                 PasswordVisualTransformation()
             },
             trailingIcon = {
-                TextButton(onClick = { onEvent(AuthEvent.ToggleLoginPasswordVisibility) }) {
-                    Text(
-                        text = stringResource(
+                IconButton(onClick = { onEvent(AuthEvent.ToggleLoginPasswordVisibility) }) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isLoginPasswordVisible) {
+                                R.drawable.ic_visibility_off
+                            } else {
+                                R.drawable.ic_visibility
+                            }
+                        ),
+                        contentDescription = stringResource(
                             if (state.isLoginPasswordVisible) {
                                 R.string.action_hide_password
                             } else {
@@ -337,9 +349,16 @@ private fun RegisterForm(
                 PasswordVisualTransformation()
             },
             trailingIcon = {
-                TextButton(onClick = { onEvent(AuthEvent.ToggleRegisterPasswordVisibility) }) {
-                    Text(
-                        text = stringResource(
+                IconButton(onClick = { onEvent(AuthEvent.ToggleRegisterPasswordVisibility) }) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isRegisterPasswordVisible) {
+                                R.drawable.ic_visibility_off
+                            } else {
+                                R.drawable.ic_visibility
+                            }
+                        ),
+                        contentDescription = stringResource(
                             if (state.isRegisterPasswordVisible) {
                                 R.string.action_hide_password
                             } else {
@@ -375,9 +394,16 @@ private fun RegisterForm(
                 PasswordVisualTransformation()
             },
             trailingIcon = {
-                TextButton(onClick = { onEvent(AuthEvent.ToggleRegisterConfirmPasswordVisibility) }) {
-                    Text(
-                        text = stringResource(
+                IconButton(onClick = { onEvent(AuthEvent.ToggleRegisterConfirmPasswordVisibility) }) {
+                    Icon(
+                        painter = painterResource(
+                            if (state.isRegisterConfirmPasswordVisible) {
+                                R.drawable.ic_visibility_off
+                            } else {
+                                R.drawable.ic_visibility
+                            }
+                        ),
+                        contentDescription = stringResource(
                             if (state.isRegisterConfirmPasswordVisible) {
                                 R.string.action_hide_password
                             } else {

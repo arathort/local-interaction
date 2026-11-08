@@ -271,17 +271,17 @@ class CreateEventViewModelTest {
         }
         advanceUntilIdle()
 
-        viewModel.onEvent(CreateEventEvent.PhotoUrlInputChanged("https://example.com/park.jpg"))
-        viewModel.onEvent(CreateEventEvent.AddPhotoUrlClicked)
+        viewModel.onEvent(CreateEventEvent.PhotosSelected(listOf("content://media/external/images/media/1", "content://media/external/images/media/2")))
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.photoUrls.contains("https://example.com/park.jpg"))
-        assertEquals("", viewModel.uiState.value.photoUrlInput)
+        assertTrue(viewModel.uiState.value.photoUrls.contains("content://media/external/images/media/1"))
+        assertEquals(2, viewModel.uiState.value.photoUrls.size)
 
-        viewModel.onEvent(CreateEventEvent.RemovePhotoClicked("https://example.com/park.jpg"))
+        viewModel.onEvent(CreateEventEvent.RemovePhotoClicked("content://media/external/images/media/1"))
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.photoUrls.contains("https://example.com/park.jpg"))
+        assertFalse(viewModel.uiState.value.photoUrls.contains("content://media/external/images/media/1"))
+        assertEquals(1, viewModel.uiState.value.photoUrls.size)
         collectJob.cancel()
     }
 

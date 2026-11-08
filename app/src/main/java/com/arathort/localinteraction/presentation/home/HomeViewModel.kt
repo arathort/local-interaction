@@ -31,6 +31,7 @@ class HomeViewModel @Inject constructor(
     private val searchQueryFlow = MutableStateFlow("")
     private val selectedCategoriesFlow = MutableStateFlow<Set<String>>(emptySet())
     private val isMapViewFlow = MutableStateFlow(false)
+    private val selectedMapEventIdFlow = MutableStateFlow<String?>(null)
 
     private val effectChannel = Channel<HomeEffect>(Channel.BUFFERED)
     val effects: Flow<HomeEffect> = effectChannel.receiveAsFlow()
@@ -49,8 +50,11 @@ class HomeViewModel @Inject constructor(
         filteredEventsFlow,
         observeCategoriesUseCase(),
         searchQueryFlow,
-        combine(selectedCategoriesFlow, isMapViewFlow) { cats, isMap -> cats to isMap }
-    ) { user, events, categories, query, (selectedCategories, isMapView) ->
+        combine(selectedCategoriesFlow, isMapViewFlow, selectedMapEventIdFlow) { cats, isMap, selectedMapId ->
+            Triple(cats, isMap, selectedMapId)
+        }
+    ) { user, events, categories, query, (selectedCategories, isMapView, selectedMapId) ->
+        val validSelectedMapId = if (events.any { it.id == selectedMapId }) selectedMapId else null
         HomeState(
             currentUser = user,
             events = events,
@@ -58,6 +62,7 @@ class HomeViewModel @Inject constructor(
             selectedCategoryIds = selectedCategories,
             searchQuery = query,
             isMapView = isMapView,
+            selectedMapEventId = validSelectedMapId,
             isLoading = false
         )
     }.stateIn(
@@ -83,9 +88,19 @@ class HomeViewModel @Inject constructor(
             HomeEvent.ClearFilters -> {
                 searchQueryFlow.value = ""
                 selectedCategoriesFlow.value = emptySet()
+                selectedMapEventIdFlow.value = null
             }
             is HomeEvent.ViewModeChanged -> {
                 isMapViewFlow.value = event.isMapView
+                if (!event.isMapView) {
+                    selectedMapEventIdFlow.value = null
+                }
+            }
+            is HomeEvent.MapMarkerClicked -> {
+                selectedMapEventIdFlow.value = event.eventId
+            }
+            HomeEvent.MapDismissPreviewClicked -> {
+                selectedMapEventIdFlow.value = null
             }
             is HomeEvent.EventClicked -> {
                 viewModelScope.launch {
