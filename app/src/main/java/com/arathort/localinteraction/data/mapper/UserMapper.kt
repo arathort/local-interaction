@@ -1,5 +1,6 @@
 package com.arathort.localinteraction.data.mapper
 
+import com.arathort.localinteraction.data.dto.AdminUserRegistryItemDto
 import com.arathort.localinteraction.data.dto.MyTaskHistoryItemDto
 import com.arathort.localinteraction.data.dto.UserDto
 import com.arathort.localinteraction.domain.model.ApplicationStatus
@@ -8,6 +9,22 @@ import com.arathort.localinteraction.domain.model.MyTaskHistoryItem
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.model.UserStatus
+
+fun AdminUserRegistryItemDto.toDomain(): User = User(
+    id = id,
+    role = UserRole.fromApiValue(role),
+    fullName = fullName,
+    avatarUrl = null,
+    description = null,
+    rating = rating,
+    reviews = emptyList(),
+    email = email,
+    phone = null,
+    status = UserStatus.fromApiValue(status),
+    myTasks = emptyList(),
+    blockReason = blockReason,
+    blockedAt = blockedAt
+)
 
 fun MyTaskHistoryItemDto.toDomain(): MyTaskHistoryItem = MyTaskHistoryItem(
     applicationId = applicationId,

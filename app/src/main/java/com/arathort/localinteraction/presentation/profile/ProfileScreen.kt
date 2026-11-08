@@ -71,6 +71,7 @@ fun ProfileRoute(
     onNavigateToAuth: () -> Unit,
     onNavigateToEventDetails: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToAdminPanel: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +98,7 @@ fun ProfileRoute(
         onEvent = viewModel::onEvent,
         modifier = modifier,
         onBackClicked = onBack,
+        onNavigateToAdminPanel = onNavigateToAdminPanel,
         snackbarHostState = snackbarHostState
     )
 }
@@ -108,6 +110,7 @@ fun ProfileScreen(
     onEvent: (ProfileEvent) -> Unit,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit = { onEvent(ProfileEvent.BackClicked) },
+    onNavigateToAdminPanel: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -126,6 +129,15 @@ fun ProfileScreen(
                 },
                 actions = {
                     if (state.isCurrentUser && !state.isGuest && state.user != null) {
+                        if (state.user.role == UserRole.ADMIN) {
+                            IconButton(onClick = onNavigateToAdminPanel) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_admin_panel),
+                                    contentDescription = stringResource(R.string.admin_panel_title),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                         IconButton(onClick = { onEvent(ProfileEvent.EditProfileClicked) }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_edit),

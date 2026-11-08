@@ -22,5 +22,6 @@ data class User(
     val phone: String? = null,
     val status: UserStatus = UserStatus.ACTIVE,
     val myTasks: List<MyTaskHistoryItem> = emptyList(),
-    val blockReason: String? = null
+    val blockReason: String? = null,
+    val blockedAt: String? = null
 )

@@ -62,12 +62,12 @@ class ApplicationRepositoryImpl @Inject constructor(
     }
 
     override suspend fun approveApplication(applicationId: String): Result<VolunteerApplication> = runCatching {
-        val request = ApplicationReviewRequestDto(status = "Схвалено")
+        val request = ApplicationReviewRequestDto(status = "Approved")
         apiService.reviewVolunteerApplication(applicationId, request).toDomain()
     }
 
     override suspend fun rejectApplication(applicationId: String, reason: String): Result<VolunteerApplication> = runCatching {
-        val request = ApplicationReviewRequestDto(status = "Відхилено", rejectionReason = reason.ifBlank { null })
+        val request = ApplicationReviewRequestDto(status = "Rejected", rejectionReason = reason.ifBlank { null })
         apiService.reviewVolunteerApplication(applicationId, request).toDomain()
     }
 }

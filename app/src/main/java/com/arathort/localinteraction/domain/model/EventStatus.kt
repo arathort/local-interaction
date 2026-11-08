@@ -16,8 +16,8 @@ enum class EventStatus(val apiValue: String) {
 
 enum class ModerationStatus(val apiValue: String) {
     PENDING("На розгляді"),
-    APPROVED("Схвалено"),
-    REJECTED("Відхилено");
+    APPROVED("Approved"),
+    REJECTED("Rejected");
 
     companion object {
         fun fromApiValue(value: String): ModerationStatus =

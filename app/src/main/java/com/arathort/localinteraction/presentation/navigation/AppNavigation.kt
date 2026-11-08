@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.arathort.localinteraction.R
+import com.arathort.localinteraction.presentation.admin.AdminPanelRoute
 import com.arathort.localinteraction.presentation.auth.AuthRoute
 import com.arathort.localinteraction.presentation.create_event.CreateEventRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
@@ -101,6 +102,9 @@ fun AppNavigation(
                     onNavigateToAuth = { backStack.add(AppDestination.Auth) },
                     onNavigateToEventDetails = { eventId ->
                         backStack.add(AppDestination.EventDetails(eventId))
+                    },
+                    onNavigateToAdminPanel = {
+                        backStack.add(AppDestination.AdminPanel)
                     }
                 )
             }
@@ -140,10 +144,11 @@ fun AppNavigation(
             }
 
             entry<AppDestination.AdminPanel> {
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.admin_panel_title),
-                    subtitle = stringResource(R.string.admin_tab_moderation),
-                    onBack = { backStack.removeLastOrNull() }
+                AdminPanelRoute(
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToProfile = { userId ->
+                        backStack.add(AppDestination.Profile(userId))
+                    }
                 )
             }
         }

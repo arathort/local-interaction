@@ -7,6 +7,13 @@ data class Complaint(
     val violatorId: String,
     val violatorName: String,
     val reason: String,
-    val createdAtMillis: Long,
-    val isResolved: Boolean = false
+    val createdAtMillis: Long = 0L,
+    val isResolved: Boolean = false,
+    val targetType: String = "User",
+    val targetId: String = "",
+    val targetSummary: String = "",
+    val violationCategory: String = "",
+    val status: String = if (isResolved) "Resolved" else "Pending",
+    val adminNote: String? = null,
+    val createdAt: String = ""
 )
