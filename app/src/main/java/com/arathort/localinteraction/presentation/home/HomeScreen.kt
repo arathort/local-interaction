@@ -114,6 +114,14 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(text = stringResource(R.string.home_title)) },
                 actions = {
+                    if (state.currentUser.role == UserRole.ADMIN) {
+                        IconButton(onClick = { onEvent(HomeEvent.NavigateToAdminClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_admin_panel),
+                                contentDescription = stringResource(R.string.admin_panel_title)
+                            )
+                        }
+                    }
                     if (state.currentUser.role == UserRole.GUEST) {
                         TextButton(onClick = { onEvent(HomeEvent.NavigateToAuthClicked) }) {
                             Text(text = stringResource(R.string.auth_tab_login))

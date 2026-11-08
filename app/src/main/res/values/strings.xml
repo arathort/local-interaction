@@ -208,4 +208,71 @@
     <string name="event_details_apply_dialog_title">Подача заявки на участь</string>
     <string name="event_details_empty_comments">Коментарів поки що немає</string>
     <string name="event_details_not_found">Захід не знайдено</string>
+
+    <string name="admin_subtab_complaints">Скарги</string>
+    <string name="admin_subtab_users">Користувачі</string>
+    <string name="admin_filter_all">Всі</string>
+    <string name="admin_filter_pending">Очікують</string>
+    <string name="admin_filter_rejected">Відхилені</string>
+    <string name="admin_filter_resolved">Вирішені</string>
+    <string name="admin_filter_active">Активні</string>
+    <string name="admin_filter_blocked">Заблоковані</string>
+    <string name="admin_filter_volunteer">Волонтери</string>
+    <string name="admin_filter_organizer">Організатори</string>
+
+    <string name="admin_action_add_category">Додати категорію</string>
+    <string name="admin_action_edit_category">Редагувати</string>
+    <string name="admin_action_delete_category">Видалити</string>
+    <string name="admin_action_unblock_user">Розблокувати</string>
+    <string name="admin_action_delete_content">Видалити контент</string>
+    <string name="admin_action_reject_complaint">Відхилити скаргу</string>
+    <string name="admin_action_view_profile">Профіль</string>
+    <string name="admin_action_view_details">Деталі</string>
+    <string name="admin_action_save">Зберегти</string>
+
+    <string name="admin_dialog_create_category_title">Створення категорії</string>
+    <string name="admin_dialog_edit_category_title">Редагування категорії</string>
+    <string name="admin_dialog_delete_category_title">Видалення категорії</string>
+    <string name="admin_dialog_delete_category_message">Ви дійсно бажаєте видалити категорію «%1$s»? Якщо за нею закріплені заходи, категорія буде заархівована.</string>
+    <string name="admin_dialog_reject_event_title">Відхилення заходу</string>
+    <string name="admin_dialog_reject_complaint_title">Відхилення скарги</string>
+    <string name="admin_dialog_reject_complaint_note_hint">Коментар адміністратора (необов\'язково)</string>
+    <string name="admin_dialog_block_user_title">Блокування користувача</string>
+    <string name="admin_dialog_unblock_user_title">Розблокування користувача</string>
+    <string name="admin_dialog_unblock_user_message">Ви дійсно бажаєте розблокувати користувача %1$s?</string>
+    <string name="admin_dialog_delete_content_title">Видалення порушуючого контенту</string>
+    <string name="admin_dialog_delete_content_message">Ви дійсно бажаєте видалити контент скарги та закрити її?</string>
+
+    <string name="admin_empty_pending_events">Немає заходів, що очікують на модерацію</string>
+    <string name="admin_empty_categories">Категорій поки що немає</string>
+    <string name="admin_empty_complaints">Немає скарг у цій категорії</string>
+    <string name="admin_empty_users">Користувачів не знайдено</string>
+
+    <string name="admin_msg_event_approved">Захід успішно схвалено та опубліковано</string>
+    <string name="admin_msg_event_rejected">Захід відхилено</string>
+    <string name="admin_msg_category_created">Категорію успішно створено</string>
+    <string name="admin_msg_category_updated">Категорію оновлено</string>
+    <string name="admin_msg_category_deleted">Категорію видалено</string>
+    <string name="admin_msg_category_archived">Категорію переведено в архів</string>
+    <string name="admin_msg_user_blocked">Користувача заблоковано</string>
+    <string name="admin_msg_user_unblocked">Користувача успішно розблоковано</string>
+    <string name="admin_msg_complaint_rejected">Скаргу відхилено</string>
+    <string name="admin_msg_content_deleted">Порушуючий контент видалено</string>
+    <string name="admin_error_access_denied">Доступ заборонено: потрібні права адміністратора</string>
+    <string name="admin_error_category_name_length">Назва категорії має містити від 2 до 80 символів</string>
+    <string name="admin_error_block_reason_length">Причина блокування має містити щонайменше 5 символів</string>
+    <string name="admin_error_rejection_reason_empty">Вкажіть обов\'язкову причину відхилення</string>
+
+    <string name="admin_user_search_hint">Пошук користувачів за ім\'ям або email…</string>
+    <string name="admin_category_status_archived">В архіві</string>
+    <string name="admin_category_status_active">Активна</string>
+    <string name="admin_category_total_events">Всього заходів: %1$d</string>
+    <string name="admin_complaint_reporter">Заявник: %1$s</string>
+    <string name="admin_complaint_violator">Порушник: %1$s</string>
+    <string name="admin_complaint_target">Об\'єкт: %1$s (%2$s)</string>
+    <string name="admin_complaint_category">Категорія: %1$s</string>
+    <string name="admin_complaint_note">Примітка адміна: %1$s</string>
+    <string name="admin_user_block_reason">Причина: %1$s</string>
+    <string name="admin_nav_button_desc">Панель адміністратора</string>
+    <string name="admin_profile_entry_button">Адміністративна панель</string>
 </resources>

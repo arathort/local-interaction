@@ -2,8 +2,8 @@ package com.arathort.localinteraction.domain.model
 
 enum class ApplicationStatus(val apiValue: String) {
     PENDING("Очікує розгляду"),
-    APPROVED("Схвалено"),
-    REJECTED("Відхилено"),
+    APPROVED("Approved"),
+    REJECTED("Rejected"),
     WITHDRAWN("Відкликано");
 
     companion object {
