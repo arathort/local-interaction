@@ -65,6 +65,7 @@ fun ManageApplicationsRoute(
     onBack: () -> Unit,
     onNavigateToVolunteerProfile: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToWriteReview: ((String, String, String, String) -> Unit)? = null,
     viewModel: ManageApplicationsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,6 +90,9 @@ fun ManageApplicationsRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBackClicked = onBack,
+        onRateVolunteerClicked = { app ->
+            onNavigateToWriteReview?.invoke(state.eventId, state.eventTitle, app.volunteerId, app.volunteerName)
+        },
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -101,6 +105,7 @@ fun ManageApplicationsScreen(
     onEvent: (ManageApplicationsEvent) -> Unit,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit = { onEvent(ManageApplicationsEvent.BackClicked) },
+    onRateVolunteerClicked: ((VolunteerApplication) -> Unit)? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -225,7 +230,10 @@ fun ManageApplicationsScreen(
                                     isProcessing = state.isProcessingAction,
                                     onVolunteerClick = { onEvent(ManageApplicationsEvent.VolunteerClicked(application.volunteerId)) },
                                     onApprove = { onEvent(ManageApplicationsEvent.ApproveClicked(application.id)) },
-                                    onReject = { onEvent(ManageApplicationsEvent.RejectClicked(application.id)) }
+                                    onReject = { onEvent(ManageApplicationsEvent.RejectClicked(application.id)) },
+                                    onRateVolunteer = if (state.eventStatus == EventStatus.IN_PROGRESS || state.eventStatus == EventStatus.COMPLETED) {
+                                        { onRateVolunteerClicked?.invoke(application) }
+                                    } else null
                                 )
                             }
                         }
@@ -371,7 +379,8 @@ private fun VolunteerApplicationCard(
     onVolunteerClick: () -> Unit,
     onApprove: () -> Unit,
     onReject: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRateVolunteer: (() -> Unit)? = null
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -511,6 +520,21 @@ private fun VolunteerApplicationCard(
                     ) {
                         Text(text = stringResource(R.string.manage_applications_approve))
                     }
+                }
+            }
+
+            if (application.status == ApplicationStatus.APPROVED && onRateVolunteer != null) {
+                OutlinedButton(
+                    onClick = onRateVolunteer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_star),
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.iconSmall)
+                    )
+                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                    Text(text = stringResource(R.string.review_action_rate_volunteer))
                 }
             }
         }

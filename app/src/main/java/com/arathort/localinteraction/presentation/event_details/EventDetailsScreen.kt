@@ -72,6 +72,7 @@ fun EventDetailsRoute(
     onNavigateToManageApplications: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToProfile: (String) -> Unit = {},
+    onNavigateToWriteReview: ((String, String, String, String) -> Unit)? = null,
     viewModel: EventDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -103,6 +104,11 @@ fun EventDetailsRoute(
         onEvent = viewModel::onEvent,
         onBackClicked = onBack,
         onOrganizerClicked = { state.event?.organizer?.id?.let(onNavigateToProfile) },
+        onRateOrganizer = {
+            state.event?.let { ev ->
+                onNavigateToWriteReview?.invoke(ev.id, ev.title, ev.organizer.id, ev.organizer.fullName.orEmpty())
+            }
+        },
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -116,6 +122,7 @@ fun EventDetailsScreen(
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit = { onEvent(EventDetailsEvent.BackClicked) },
     onOrganizerClicked: () -> Unit = {},
+    onRateOrganizer: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -138,7 +145,8 @@ fun EventDetailsScreen(
             if (state.event != null) {
                 EventDetailsBottomBar(
                     state = state,
-                    onEvent = onEvent
+                    onEvent = onEvent,
+                    onRateOrganizer = onRateOrganizer
                 )
             }
         }
@@ -422,6 +430,7 @@ private fun OrganizerCard(
 private fun EventDetailsBottomBar(
     state: EventDetailsState,
     onEvent: (EventDetailsEvent) -> Unit,
+    onRateOrganizer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val event = state.event ?: return
@@ -519,6 +528,21 @@ private fun EventDetailsBottomBar(
                                     } else {
                                         Text(text = stringResource(R.string.event_details_action_withdraw))
                                     }
+                                }
+                            } else if (myApp.status == ApplicationStatus.APPROVED &&
+                                (event.status == EventStatus.IN_PROGRESS || event.status == EventStatus.COMPLETED)
+                            ) {
+                                Button(
+                                    onClick = onRateOrganizer,
+                                    enabled = !state.isActionLoading
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_star),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(Dimensions.iconSmall)
+                                    )
+                                    Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                                    Text(text = stringResource(R.string.review_action_rate_organizer))
                                 }
                             }
                         }

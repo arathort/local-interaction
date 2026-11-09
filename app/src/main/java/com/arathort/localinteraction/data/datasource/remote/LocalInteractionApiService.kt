@@ -19,12 +19,16 @@ import com.arathort.localinteraction.data.dto.EventDto
 import com.arathort.localinteraction.data.dto.EventModerationRequestDto
 import com.arathort.localinteraction.data.dto.EventStatusUpdateDto
 import com.arathort.localinteraction.data.dto.EventUpdateDto
+import com.arathort.localinteraction.data.dto.OrganizerReviewVolunteerCreateDto
 import com.arathort.localinteraction.data.dto.ProfileUpdateDto
 import com.arathort.localinteraction.data.dto.ReviewDto
+import com.arathort.localinteraction.data.dto.ReviewResponseDto
+import com.arathort.localinteraction.data.dto.ReviewTargetInfoDto
 import com.arathort.localinteraction.data.dto.UserBlockRequestDto
 import com.arathort.localinteraction.data.dto.UserCreateDto
 import com.arathort.localinteraction.data.dto.UserDto
 import com.arathort.localinteraction.data.dto.UserResponseDto
+import com.arathort.localinteraction.data.dto.VolunteerReviewOrganizerCreateDto
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.Field
@@ -137,6 +141,29 @@ interface LocalInteractionApiService {
 
     @GET("api/v1/users/{id}/reviews")
     suspend fun getUserReviews(@Path("id") userId: String): List<ReviewDto>
+
+    @GET("api/v1/events/{event_id}/reviews/form-info/{target_user_id}")
+    suspend fun getReviewFormInfo(
+        @Path("event_id") eventId: String,
+        @Path("target_user_id") targetUserId: String
+    ): ReviewTargetInfoDto
+
+    @POST("api/v1/events/{event_id}/reviews/organizer")
+    suspend fun submitReviewForOrganizer(
+        @Path("event_id") eventId: String,
+        @Body request: VolunteerReviewOrganizerCreateDto
+    ): ReviewResponseDto
+
+    @POST("api/v1/events/{event_id}/reviews/volunteer")
+    suspend fun submitReviewForVolunteer(
+        @Path("event_id") eventId: String,
+        @Body request: OrganizerReviewVolunteerCreateDto
+    ): ReviewResponseDto
+
+    @GET("api/v1/events/{event_id}/reviews")
+    suspend fun getEventReviews(
+        @Path("event_id") eventId: String
+    ): List<ReviewResponseDto>
 
     @GET("api/v1/admin/complaints")
     suspend fun getComplaints(): List<ComplaintDto>
