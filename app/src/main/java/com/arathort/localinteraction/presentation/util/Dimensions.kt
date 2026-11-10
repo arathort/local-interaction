@@ -50,4 +50,8 @@ object Dimensions {
     val eventCardCoverHeight = 140.dp
     val photoPreviewHeight = 320.dp
     val avatarCameraBadgeSize = 28.dp
+    val authHeroIconContainerSize = 64.dp
+    val authHeroIconSize = 32.dp
+    val roleCardBorderSelected = 2.dp
+    val roleCardBorderDefault = 1.dp
 }

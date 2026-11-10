@@ -313,4 +313,37 @@
     <string name="profile_delete_avatar_action">Видалити фото</string>
     <string name="profile_avatar_updated_success">Фото профілю оновлено</string>
     <string name="profile_avatar_deleted_success">Фото профілю видалено</string>
+
+    <string name="auth_hero_login_title">З поверненням!</string>
+    <string name="auth_hero_login_subtitle">Увійдіть, щоб долучатися до ініціатив або керувати власними заходами</string>
+    <string name="auth_hero_register_title">Приєднуйтесь до спільноти</string>
+    <string name="auth_hero_register_subtitle">Оберіть роль та створіть обліковий запис для локальної взаємодії</string>
+    <string name="auth_role_volunteer_desc">Допомагайте громаді та беріть участь у подіях</string>
+    <string name="auth_role_organizer_desc">Створюйте ініціативи та координуйте команди</string>
+    <string name="auth_password_length_indicator">Довжина пароля: %1$d / 8+ символів</string>
+    <string name="auth_passwords_match_indicator">Паролі збігаються</string>
+    <string name="auth_or_continue_with">Або продовжити через</string>
+
+    <string name="auth_recovery_dialog_title_step1">Відновлення пароля</string>
+    <string name="auth_recovery_dialog_subtitle_step1">Введіть електронну пошту вашого акаунту, щоб отримати код або токен для скидання пароля.</string>
+    <string name="auth_recovery_send_code_button">Надіслати інструкції</string>
+    <string name="auth_recovery_already_have_code">У мене вже є код відновлення</string>
+    <string name="auth_recovery_code_sent_success">Інструкції для скидання пароля надіслано на пошту</string>
+
+    <string name="auth_recovery_dialog_title_step2">Новий пароль</string>
+    <string name="auth_recovery_dialog_subtitle_step2">Введіть отриманий токен відновлення та встановіть новий надійний пароль.</string>
+    <string name="auth_recovery_token_label">Токен або код відновлення</string>
+    <string name="auth_recovery_new_password_label">Новий пароль</string>
+    <string name="auth_recovery_confirm_password_label">Підтвердження нового пароля</string>
+    <string name="auth_recovery_submit_reset_button">Змінити пароль</string>
+    <string name="auth_recovery_back_to_email">Змінити адресу пошти</string>
+    <string name="auth_reset_password_success">Пароль успішно змінено! Тепер ви можете увійти</string>
+    <string name="error_reset_token_required">Введіть токен відновлення</string>
+
+    <string name="auth_oauth_dialog_title_google">Вхід через Google</string>
+    <string name="auth_oauth_dialog_title_facebook">Вхід через Facebook</string>
+    <string name="auth_oauth_dialog_subtitle">Оберіть роль для вашого профілю (при першій реєстрації) та підтвердіть вхід.</string>
+    <string name="auth_oauth_token_label">OAuth токен провайдера</string>
+    <string name="auth_oauth_continue_button">Продовжити</string>
+    <string name="error_oauth_token_required">Вкажіть OAuth токен для авторизації</string>
 </resources>

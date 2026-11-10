@@ -1,15 +1,20 @@
 package com.arathort.localinteraction
 
 import com.arathort.localinteraction.R
+import com.arathort.localinteraction.domain.model.OAuthProvider
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.AuthRepository
+import com.arathort.localinteraction.domain.usecase.ForgotPasswordUseCase
 import com.arathort.localinteraction.domain.usecase.LoginUseCase
+import com.arathort.localinteraction.domain.usecase.OAuthLoginUseCase
 import com.arathort.localinteraction.domain.usecase.RegisterUseCase
+import com.arathort.localinteraction.domain.usecase.ResetPasswordUseCase
 import com.arathort.localinteraction.presentation.auth.AuthEffect
 import com.arathort.localinteraction.presentation.auth.AuthEvent
 import com.arathort.localinteraction.presentation.auth.AuthTab
 import com.arathort.localinteraction.presentation.auth.AuthViewModel
+import com.arathort.localinteraction.presentation.auth.PasswordRecoveryStep
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -40,7 +45,10 @@ class AuthViewModelTest {
         fakeAuthRepository = FakeAuthRepository()
         viewModel = AuthViewModel(
             loginUseCase = LoginUseCase(fakeAuthRepository),
-            registerUseCase = RegisterUseCase(fakeAuthRepository)
+            registerUseCase = RegisterUseCase(fakeAuthRepository),
+            forgotPasswordUseCase = ForgotPasswordUseCase(fakeAuthRepository),
+            resetPasswordUseCase = ResetPasswordUseCase(fakeAuthRepository),
+            oauthLoginUseCase = OAuthLoginUseCase(fakeAuthRepository)
         )
     }
 
@@ -171,6 +179,52 @@ class AuthViewModelTest {
         assertTrue(viewModel.uiState.value.isRegisterConfirmPasswordVisible)
     }
 
+    @Test
+    fun `ForgotPasswordSubmitted validates email and advances to CONFIRM_RESET step`() = runTest {
+        viewModel.onEvent(AuthEvent.OpenPasswordRecoveryClicked)
+        assertTrue(viewModel.uiState.value.showPasswordRecoveryDialog)
+
+        viewModel.onEvent(AuthEvent.RecoveryEmailChanged("invalid-email"))
+        viewModel.onEvent(AuthEvent.ForgotPasswordSubmitted)
+        assertEquals(R.string.error_invalid_email, viewModel.uiState.value.recoveryEmailErrorResId)
+
+        viewModel.onEvent(AuthEvent.RecoveryEmailChanged("user@example.com"))
+        viewModel.onEvent(AuthEvent.ForgotPasswordSubmitted)
+        assertEquals(PasswordRecoveryStep.CONFIRM_RESET, viewModel.uiState.value.recoveryStep)
+    }
+
+    @Test
+    fun `ResetPasswordSubmitted validates token and passwords then closes dialog on success`() = runTest {
+        viewModel.onEvent(AuthEvent.OpenPasswordRecoveryClicked)
+        viewModel.onEvent(AuthEvent.RecoveryStepChanged(PasswordRecoveryStep.CONFIRM_RESET))
+
+        viewModel.onEvent(AuthEvent.ResetPasswordSubmitted)
+        assertEquals(R.string.error_reset_token_required, viewModel.uiState.value.resetTokenErrorResId)
+        assertEquals(R.string.error_password_too_short, viewModel.uiState.value.resetNewPasswordErrorResId)
+
+        viewModel.onEvent(AuthEvent.ResetTokenChanged("reset-token-123"))
+        viewModel.onEvent(AuthEvent.ResetNewPasswordChanged("newPassword123"))
+        viewModel.onEvent(AuthEvent.ResetConfirmPasswordChanged("newPassword123"))
+        viewModel.onEvent(AuthEvent.ResetPasswordSubmitted)
+
+        assertFalse(viewModel.uiState.value.showPasswordRecoveryDialog)
+    }
+
+    @Test
+    fun `OAuthLoginSubmitted validates token and logs in user`() = runTest {
+        viewModel.onEvent(AuthEvent.OAuthProviderClicked(OAuthProvider.GOOGLE))
+        assertEquals(OAuthProvider.GOOGLE, viewModel.uiState.value.activeOAuthProvider)
+
+        viewModel.onEvent(AuthEvent.OAuthLoginSubmitted)
+        assertEquals(R.string.error_oauth_token_required, viewModel.uiState.value.oauthTokenErrorResId)
+
+        viewModel.onEvent(AuthEvent.OAuthTokenChanged("google-id-token-xyz"))
+        viewModel.onEvent(AuthEvent.OAuthRoleSelected(UserRole.ORGANIZER))
+        viewModel.onEvent(AuthEvent.OAuthLoginSubmitted)
+
+        assertNull(viewModel.uiState.value.activeOAuthProvider)
+    }
+
     private class FakeAuthRepository : AuthRepository {
         override val currentUser: Flow<User> = emptyFlow()
 
@@ -187,6 +241,23 @@ class AuthViewModelTest {
         ): Result<User> {
             return Result.success(User(id = "user-1", email = email, role = role))
         }
+
+        override suspend fun oauthLogin(
+            provider: OAuthProvider,
+            token: String,
+            role: UserRole,
+            agreedToRules: Boolean
+        ): Result<User> {
+            return Result.success(User(id = "user-oauth-1", role = role))
+        }
+
+        override suspend fun forgotPassword(email: String): Result<Unit> = Result.success(Unit)
+
+        override suspend fun resetPassword(
+            resetToken: String,
+            newPassword: String,
+            newPasswordConfirm: String
+        ): Result<Unit> = Result.success(Unit)
 
         override suspend fun logout(): Result<Unit> = Result.success(Unit)
 
