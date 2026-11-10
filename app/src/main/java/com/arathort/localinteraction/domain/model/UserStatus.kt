@@ -1,12 +1,17 @@
 package com.arathort.localinteraction.domain.model
 
 enum class UserStatus(val apiValue: String) {
-    ACTIVE("Активний"),
-    BLOCKED("Заблокований");
+    ACTIVE("Active"),
+    BLOCKED("Blocked");
 
     companion object {
         fun fromApiValue(value: String): UserStatus =
-            entries.find { it.apiValue.equals(value, ignoreCase = true) || it.name.equals(value, ignoreCase = true) }
-                ?: ACTIVE
+            when {
+                value.equals("Active", ignoreCase = true) ||
+                    value.equals("Активний", ignoreCase = true) -> ACTIVE
+                value.equals("Blocked", ignoreCase = true) ||
+                    value.equals("Заблокований", ignoreCase = true) -> BLOCKED
+                else -> ACTIVE
+            }
     }
 }

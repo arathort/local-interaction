@@ -20,7 +20,7 @@ class ReviewRepositoryImpl @Inject constructor(
 
     override fun observeReviewsForUser(userId: String): Flow<List<Review>> = flow {
         val reviews = runCatching {
-            apiService.getUserReviews(userId).map { it.toDomain() }
+            apiService.getUserPublicProfile(userId).reviews.map { it.toDomain() }
         }.getOrDefault(emptyList())
         emit(reviews)
     }

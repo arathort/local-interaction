@@ -8,8 +8,11 @@ fun CommentDto.toDomain(): Comment = Comment(
     eventId = eventId,
     authorId = authorId,
     authorName = authorName,
+    authorRole = authorRole,
     authorAvatarUrl = authorAvatarUrl,
     text = text,
+    replyToCommentId = replyToCommentId,
+    createdAt = createdAt,
     createdAtMillis = createdAtMillis
 )
 
@@ -18,7 +21,10 @@ fun Comment.toDto(): CommentDto = CommentDto(
     eventId = eventId,
     authorId = authorId,
     authorName = authorName,
+    authorRole = authorRole,
     authorAvatarUrl = authorAvatarUrl,
     text = text,
+    replyToCommentId = replyToCommentId,
+    createdAt = createdAt,
     createdAtMillis = createdAtMillis
 )

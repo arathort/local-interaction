@@ -1,6 +1,7 @@
 package com.arathort.localinteraction.data.repository
 
 import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiService
+import com.arathort.localinteraction.data.dto.CommentCreateDto
 import com.arathort.localinteraction.data.dto.EventCreateDto
 import com.arathort.localinteraction.data.dto.EventStatusUpdateDto
 import com.arathort.localinteraction.data.dto.GeoLocationDto
@@ -32,8 +33,18 @@ class EventRepositoryImpl @Inject constructor(
         val categoriesParam = if (categoryIds.isEmpty()) null else categoryIds.toList()
         val searchParam = searchQuery.trim().ifBlank { null }
         val events = runCatching {
+            val categoryMap = runCatching {
+                apiService.getCategories().associate { it.id to it.name }
+            }.getOrDefault(emptyMap())
             apiService.getEvents(search = searchParam, categories = categoriesParam)
-                .map { it.toDomain() }
+                .map { dto ->
+                    val domain = dto.toDomain()
+                    if (domain.categoryName.isBlank() && domain.categoryId != null) {
+                        domain.copy(categoryName = categoryMap[domain.categoryId].orEmpty())
+                    } else {
+                        domain
+                    }
+                }
                 .filter { it.status == EventStatus.OPEN }
         }.getOrDefault(emptyList())
         emit(events)
@@ -49,7 +60,15 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEventById(eventId: String): Result<Event> = runCatching {
-        apiService.getEventById(eventId).toDomain()
+        val domain = apiService.getEventById(eventId).toDomain()
+        if (domain.categoryName.isBlank() && domain.categoryId != null) {
+            val categoryName = runCatching {
+                apiService.getCategories().find { it.id == domain.categoryId }?.name.orEmpty()
+            }.getOrDefault("")
+            domain.copy(categoryName = categoryName)
+        } else {
+            domain
+        }
     }
 
     override fun observeCommentsForEvent(eventId: String): Flow<List<Comment>> = flow {
@@ -60,7 +79,8 @@ class EventRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addComment(eventId: String, text: String): Result<Comment> = runCatching {
-        throw UnsupportedOperationException("Comments endpoint is not supported by backend yet")
+        val request = CommentCreateDto(text = text.trim())
+        apiService.createEventComment(eventId, request).toDomain()
     }
 
     override suspend fun createEvent(

@@ -8,7 +8,14 @@ enum class UserRole(val apiValue: String) {
 
     companion object {
         fun fromApiValue(value: String): UserRole =
-            entries.find { it.apiValue.equals(value, ignoreCase = true) || it.name.equals(value, ignoreCase = true) }
-                ?: GUEST
+            when {
+                value.equals("Volunteer", ignoreCase = true) ||
+                    value.equals("Волонтер", ignoreCase = true) -> VOLUNTEER
+                value.equals("Organizer", ignoreCase = true) ||
+                    value.equals("Організатор", ignoreCase = true) -> ORGANIZER
+                value.equals("Admin", ignoreCase = true) ||
+                    value.equals("Адміністратор", ignoreCase = true) -> ADMIN
+                else -> GUEST
+            }
     }
 }
