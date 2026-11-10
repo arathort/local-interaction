@@ -19,7 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -50,18 +52,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.ApplicationStatus
+import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
-import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 
@@ -85,6 +88,7 @@ fun EventDetailsRoute(
                 EventDetailsEffect.NavigateBack -> onBack()
                 EventDetailsEffect.NavigateToAuth -> onNavigateToAuth()
                 is EventDetailsEffect.NavigateToManageApplications -> onNavigateToManageApplications(effect.eventId)
+                is EventDetailsEffect.NavigateToProfile -> onNavigateToProfile(effect.userId)
                 is EventDetailsEffect.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(
                         message = context.resources.getString(effect.messageResId)
@@ -185,7 +189,9 @@ fun EventDetailsScreen(
             }
             else -> {
                 EventDetailsContent(
+                    state = state,
                     event = state.event,
+                    onEvent = onEvent,
                     onOrganizerClicked = onOrganizerClicked,
                     modifier = Modifier
                         .fillMaxSize()
@@ -201,12 +207,22 @@ fun EventDetailsScreen(
         if (state.showStatusDialog) {
             ChangeStatusDialog(state = state, onEvent = onEvent)
         }
+
+        if (state.deletingCommentId != null) {
+            DeleteCommentConfirmDialog(
+                isDeleting = state.isActionLoading,
+                onConfirm = { onEvent(EventDetailsEvent.ConfirmDeleteComment) },
+                onDismiss = { onEvent(EventDetailsEvent.DismissDeleteCommentDialog) }
+            )
+        }
     }
 }
 
 @Composable
 private fun EventDetailsContent(
+    state: EventDetailsState,
     event: Event,
+    onEvent: (EventDetailsEvent) -> Unit,
     modifier: Modifier = Modifier,
     onOrganizerClicked: () -> Unit = {}
 ) {
@@ -319,20 +335,435 @@ private fun EventDetailsContent(
         HorizontalDivider()
         Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
-        Text(
-            text = stringResource(R.string.event_details_comments_section, 0),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
-        Text(
-            text = stringResource(R.string.event_details_empty_comments),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        EventCommentsSection(
+            state = state,
+            organizerId = event.organizer.id,
+            onEvent = onEvent
         )
 
         Spacer(modifier = Modifier.height(Dimensions.authHeaderSpacing))
     }
+}
+
+@Composable
+private fun EventCommentsSection(
+    state: EventDetailsState,
+    organizerId: String,
+    onEvent: (EventDetailsEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val commentsById = remember(state.comments) {
+        state.comments.associateBy { it.id }
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
+    ) {
+        Text(
+            text = stringResource(R.string.event_details_comments_section, state.comments.size),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        if (state.currentUser.role == UserRole.GUEST) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Dimensions.paddingMedium),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                ) {
+                    Text(
+                        text = stringResource(R.string.event_details_comment_guest_prompt),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedButton(onClick = { onEvent(EventDetailsEvent.SubmitCommentClicked) }) {
+                        Text(text = stringResource(R.string.auth_login_button))
+                    }
+                }
+            }
+        } else if (state.event?.status != EventStatus.CANCELLED) {
+            CommentInputForm(
+                commentText = state.commentText,
+                replyingToComment = state.replyingToComment,
+                errorResId = state.commentErrorResId,
+                isSubmitting = state.isSubmittingComment,
+                onTextChanged = { onEvent(EventDetailsEvent.CommentTextChanged(it)) },
+                onCancelReply = { onEvent(EventDetailsEvent.CancelReplyClicked) },
+                onSubmit = { onEvent(EventDetailsEvent.SubmitCommentClicked) }
+            )
+        }
+
+        if (state.isCommentsLoading && state.comments.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Dimensions.paddingLarge),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                    strokeWidth = Dimensions.progressIndicatorStrokeWidth
+                )
+            }
+        } else if (state.comments.isEmpty()) {
+            Text(
+                text = stringResource(R.string.event_details_empty_comments),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+            ) {
+                state.comments.forEach { comment ->
+                    val parentComment = comment.replyToCommentId?.let { commentsById[it] }
+                    val canDelete = comment.authorId == state.currentUser.id ||
+                        state.currentUser.role == UserRole.ADMIN
+                    CommentCard(
+                        comment = comment,
+                        parentComment = parentComment,
+                        isOrganizerAuthor = comment.authorId.isNotBlank() && comment.authorId == organizerId,
+                        canReply = state.event?.status != EventStatus.CANCELLED,
+                        canDelete = canDelete,
+                        onAuthorClick = { onEvent(EventDetailsEvent.CommentAuthorClicked(comment.authorId)) },
+                        onReplyClick = { onEvent(EventDetailsEvent.ReplyToCommentClicked(comment)) },
+                        onDeleteClick = { onEvent(EventDetailsEvent.DeleteCommentClicked(comment.id)) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentInputForm(
+    commentText: String,
+    replyingToComment: Comment?,
+    errorResId: Int?,
+    isSubmitting: Boolean,
+    onTextChanged: (String) -> Unit,
+    onCancelReply: () -> Unit,
+    onSubmit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+    ) {
+        if (replyingToComment != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = Dimensions.paddingMedium,
+                            vertical = Dimensions.paddingSmall
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_reply),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.iconSmall),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(
+                                    R.string.event_details_comment_replying_to,
+                                    replyingToComment.authorName
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = replyingToComment.text,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onCancelReply,
+                        modifier = Modifier.size(Dimensions.iconMedium)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close),
+                            contentDescription = stringResource(R.string.action_cancel),
+                            modifier = Modifier.size(Dimensions.iconSmall),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+        }
+
+        OutlinedTextField(
+            value = commentText,
+            onValueChange = onTextChanged,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(text = stringResource(R.string.event_details_comment_hint)) },
+            minLines = 2,
+            maxLines = 5,
+            isError = errorResId != null,
+            supportingText = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = errorResId?.let { stringResource(it) }.orEmpty(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = stringResource(R.string.review_char_counter, commentText.length, 1000),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (commentText.length > 1000) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        )
+
+        Button(
+            onClick = onSubmit,
+            enabled = !isSubmitting && commentText.isNotBlank(),
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            if (isSubmitting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                    strokeWidth = Dimensions.progressIndicatorStrokeWidth,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_send),
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSmall)
+                )
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                Text(text = stringResource(R.string.event_details_comment_send))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommentCard(
+    comment: Comment,
+    parentComment: Comment?,
+    isOrganizerAuthor: Boolean,
+    canReply: Boolean,
+    canDelete: Boolean,
+    onAuthorClick: () -> Unit,
+    onReplyClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isReply = comment.replyToCommentId != null
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = if (isReply) Dimensions.commentReplyIndent else Dimensions.paddingExtraSmall),
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.cardElevation),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimensions.paddingMedium),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .size(Dimensions.avatarSmall)
+                        .clickable(onClick = onAuthorClick),
+                    shape = RoundedCornerShape(Dimensions.avatarSmall),
+                    color = if (isOrganizerAuthor) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    }
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = comment.authorName.trim().take(1).uppercase().ifBlank { "U" },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isOrganizerAuthor) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = onAuthorClick)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                    ) {
+                        Text(
+                            text = comment.authorName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (isOrganizerAuthor) {
+                            AssistChip(
+                                onClick = {},
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.event_details_comment_organizer_badge),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                    }
+
+                    val formattedTime = comment.createdAt.take(16).replace("T", " ")
+                    if (formattedTime.isNotBlank()) {
+                        Text(
+                            text = formattedTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (canDelete) {
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(Dimensions.iconMedium)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_delete),
+                            contentDescription = stringResource(R.string.action_delete),
+                            modifier = Modifier.size(Dimensions.iconSmall),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            if (parentComment != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(Dimensions.cardCornerRadius),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Column(modifier = Modifier.padding(Dimensions.paddingSmall)) {
+                        Text(
+                            text = parentComment.authorName,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = parentComment.text,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = comment.text,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            if (canReply) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onReplyClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_reply),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.iconSmall)
+                        )
+                        Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                        Text(text = stringResource(R.string.event_details_comment_reply_action))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteCommentConfirmDialog(
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.event_details_comment_delete_title)) },
+        text = { Text(text = stringResource(R.string.event_details_comment_delete_message)) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(text = stringResource(R.string.action_delete))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isDeleting) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }
 
 @Composable
@@ -714,7 +1145,28 @@ private fun EventDetailsScreenPreview() {
                         rating = 4.8
                     )
                 ),
-                currentUser = User(id = "user-guest", role = UserRole.GUEST),
+                comments = listOf(
+                    Comment(
+                        id = "c-1",
+                        eventId = "event-1",
+                        authorId = "user-vol-1",
+                        authorName = "Олена Коваленко",
+                        authorRole = "Volunteer",
+                        text = "Підкажіть, будь ласка, де саме біля входу в парк збираємося?",
+                        createdAt = "2026-10-30T14:20:00Z"
+                    ),
+                    Comment(
+                        id = "c-2",
+                        eventId = "event-1",
+                        authorId = "user-organizer-1",
+                        authorName = "Тарас Мельник",
+                        authorRole = "Organizer",
+                        text = "Зустрічаємося біля центральної ротонди о 09:45!",
+                        replyToCommentId = "c-1",
+                        createdAt = "2026-10-30T14:35:00Z"
+                    )
+                ),
+                currentUser = User(id = "user-vol-1", role = UserRole.VOLUNTEER),
                 isLoading = false
             ),
             onEvent = {}

@@ -92,7 +92,7 @@ class HomeViewModelTest {
             override suspend fun getEventById(eventId: String): Result<Event> =
                 sampleEvents.find { it.id == eventId }?.let { Result.success(it) } ?: Result.failure(NoSuchElementException())
             override fun observeCommentsForEvent(eventId: String): Flow<List<Comment>> = flowOf(emptyList())
-            override suspend fun addComment(eventId: String, text: String): Result<Comment> =
+            override suspend fun addComment(eventId: String, text: String, replyToCommentId: String?): Result<Comment> =
                 Result.failure(UnsupportedOperationException())
             override suspend fun createEvent(
                 title: String,

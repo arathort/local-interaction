@@ -3,7 +3,11 @@ package com.arathort.localinteraction.presentation.event_details
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
+import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.GetEventCommentsUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
@@ -31,6 +35,9 @@ class EventDetailsViewModel @AssistedInject constructor(
     private val submitApplicationUseCase: SubmitApplicationUseCase,
     private val withdrawApplicationUseCase: WithdrawApplicationUseCase,
     private val updateEventStatusUseCase: UpdateEventStatusUseCase,
+    private val getEventCommentsUseCase: GetEventCommentsUseCase,
+    private val addEventCommentUseCase: AddEventCommentUseCase,
+    private val deleteEventCommentUseCase: DeleteEventCommentUseCase
 ) : ViewModel() {
 
     @AssistedFactory
@@ -47,6 +54,7 @@ class EventDetailsViewModel @AssistedInject constructor(
     init {
         observeCurrentUser()
         loadDetails()
+        loadComments()
     }
 
     private fun observeCurrentUser() {
@@ -62,7 +70,10 @@ class EventDetailsViewModel @AssistedInject constructor(
 
     fun onEvent(event: EventDetailsEvent) {
         when (event) {
-            EventDetailsEvent.Refresh -> loadDetails()
+            EventDetailsEvent.Refresh -> {
+                loadDetails()
+                loadComments()
+            }
             EventDetailsEvent.ApplyClicked -> handleApplyClicked()
             is EventDetailsEvent.MotivationLetterChanged -> _uiState.update { it.copy(motivationLetter = event.text) }
             is EventDetailsEvent.AgreedToShareContactsChanged -> _uiState.update {
@@ -82,6 +93,28 @@ class EventDetailsViewModel @AssistedInject constructor(
             is EventDetailsEvent.NewStatusSelected -> _uiState.update { it.copy(selectedNewStatus = event.status) }
             EventDetailsEvent.SubmitStatusChange -> handleSubmitStatusChange()
             EventDetailsEvent.DismissStatusDialog -> _uiState.update { it.copy(showStatusDialog = false) }
+            is EventDetailsEvent.CommentTextChanged -> _uiState.update {
+                it.copy(commentText = event.text, commentErrorResId = null)
+            }
+            is EventDetailsEvent.ReplyToCommentClicked -> handleReplyToCommentClicked(event.comment)
+            EventDetailsEvent.CancelReplyClicked -> _uiState.update {
+                it.copy(replyingToComment = null)
+            }
+            EventDetailsEvent.SubmitCommentClicked -> handleSubmitComment()
+            is EventDetailsEvent.DeleteCommentClicked -> _uiState.update {
+                it.copy(deletingCommentId = event.commentId)
+            }
+            EventDetailsEvent.ConfirmDeleteComment -> handleConfirmDeleteComment()
+            EventDetailsEvent.DismissDeleteCommentDialog -> _uiState.update {
+                it.copy(deletingCommentId = null)
+            }
+            is EventDetailsEvent.CommentAuthorClicked -> {
+                if (event.authorId.isNotBlank()) {
+                    viewModelScope.launch {
+                        _effect.send(EventDetailsEffect.NavigateToProfile(event.authorId))
+                    }
+                }
+            }
             EventDetailsEvent.BackClicked -> {
                 viewModelScope.launch {
                     _effect.send(EventDetailsEffect.NavigateBack)
@@ -103,6 +136,19 @@ class EventDetailsViewModel @AssistedInject constructor(
                     if (message.isNotBlank()) {
                         _effect.send(EventDetailsEffect.ShowSnackbarText(message))
                     }
+                }
+        }
+    }
+
+    private fun loadComments() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCommentsLoading = true) }
+            getEventCommentsUseCase(eventId)
+                .onSuccess { comments ->
+                    _uiState.update { it.copy(comments = comments, isCommentsLoading = false) }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isCommentsLoading = false) }
                 }
         }
     }
@@ -131,6 +177,97 @@ class EventDetailsViewModel @AssistedInject constructor(
                     applyErrorResId = null
                 )
             }
+        }
+    }
+
+    private fun handleReplyToCommentClicked(comment: Comment) {
+        val user = _uiState.value.currentUser
+        if (user.role == UserRole.GUEST) {
+            viewModelScope.launch {
+                _effect.send(EventDetailsEffect.NavigateToAuth)
+            }
+        } else {
+            _uiState.update {
+                it.copy(replyingToComment = comment, commentErrorResId = null)
+            }
+        }
+    }
+
+    private fun handleSubmitComment() {
+        val state = _uiState.value
+        if (state.currentUser.role == UserRole.GUEST) {
+            viewModelScope.launch {
+                _effect.send(EventDetailsEffect.NavigateToAuth)
+            }
+            return
+        }
+
+        val trimmedText = state.commentText.trim()
+        if (trimmedText.isEmpty()) {
+            _uiState.update { it.copy(commentErrorResId = R.string.error_comment_empty) }
+            return
+        }
+        if (trimmedText.length > 1000) {
+            _uiState.update { it.copy(commentErrorResId = R.string.error_comment_too_long) }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingComment = true, commentErrorResId = null) }
+            addEventCommentUseCase(
+                eventId = eventId,
+                text = trimmedText,
+                replyToCommentId = state.replyingToComment?.id
+            )
+                .onSuccess { newComment ->
+                    _uiState.update {
+                        it.copy(
+                            isSubmittingComment = false,
+                            commentText = "",
+                            replyingToComment = null,
+                            comments = it.comments + newComment
+                        )
+                    }
+                    _effect.send(EventDetailsEffect.ShowSnackbar(R.string.event_details_comment_added))
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isSubmittingComment = false) }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(EventDetailsEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(EventDetailsEffect.ShowSnackbar(R.string.error_network))
+                    }
+                }
+        }
+    }
+
+    private fun handleConfirmDeleteComment() {
+        val commentId = _uiState.value.deletingCommentId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionLoading = true) }
+            deleteEventCommentUseCase(commentId)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            isActionLoading = false,
+                            deletingCommentId = null,
+                            comments = state.comments.filterNot { it.id == commentId }
+                        )
+                    }
+                    _effect.send(EventDetailsEffect.ShowSnackbar(R.string.event_details_comment_deleted))
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(isActionLoading = false, deletingCommentId = null)
+                    }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(EventDetailsEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(EventDetailsEffect.ShowSnackbar(R.string.error_network))
+                    }
+                }
         }
     }
 

@@ -15,7 +15,10 @@ interface EventRepository {
     fun observeCategories(): Flow<List<Category>>
     suspend fun getEventById(eventId: String): Result<Event>
     fun observeCommentsForEvent(eventId: String): Flow<List<Comment>>
-    suspend fun addComment(eventId: String, text: String): Result<Comment>
+    suspend fun getEventComments(eventId: String, skip: Int = 0, limit: Int = 100): Result<List<Comment>> =
+        Result.success(emptyList())
+    suspend fun addComment(eventId: String, text: String, replyToCommentId: String? = null): Result<Comment>
+    suspend fun deleteComment(commentId: String): Result<Unit> = Result.success(Unit)
     suspend fun createEvent(
         title: String,
         description: String,
