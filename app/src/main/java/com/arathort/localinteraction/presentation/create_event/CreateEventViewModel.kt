@@ -5,8 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.usecase.CreateEventUseCase
+import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCategoriesUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
+import com.arathort.localinteraction.domain.usecase.UpdateEventUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -17,16 +22,32 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
-@HiltViewModel
-class CreateEventViewModel @Inject constructor(
+@HiltViewModel(assistedFactory = CreateEventViewModel.Factory::class)
+class CreateEventViewModel @AssistedInject constructor(
+    @Assisted private val eventId: String?,
     private val createEventUseCase: CreateEventUseCase,
+    private val updateEventUseCase: UpdateEventUseCase,
+    private val getEventDetailsUseCase: GetEventDetailsUseCase,
     private val observeCategoriesUseCase: ObserveCategoriesUseCase,
     private val observeCurrentUserUseCase: ObserveCurrentUserUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CreateEventState(isLoadingCategories = true))
+    @AssistedFactory
+    interface Factory {
+        fun create(eventId: String? = null): CreateEventViewModel
+    }
+
+    private val _uiState = MutableStateFlow(
+        CreateEventState(
+            eventId = eventId,
+            isLoadingCategories = true,
+            isLoadingEvent = !eventId.isNullOrBlank()
+        )
+    )
     val uiState: StateFlow<CreateEventState> = _uiState.asStateFlow()
 
     private val effectChannel = Channel<CreateEventEffect>(Channel.BUFFERED)
@@ -35,6 +56,9 @@ class CreateEventViewModel @Inject constructor(
     init {
         checkUserRole()
         loadCategories()
+        if (!eventId.isNullOrBlank()) {
+            loadExistingEvent(eventId)
+        }
     }
 
     fun onEvent(event: CreateEventEvent) {
@@ -81,7 +105,7 @@ class CreateEventViewModel @Inject constructor(
     private fun checkUserRole() {
         viewModelScope.launch {
             val user = observeCurrentUserUseCase().first()
-            val isOrganizer = user.role == UserRole.ORGANIZER
+            val isOrganizer = user.role == UserRole.ORGANIZER || user.role == UserRole.ADMIN
             _uiState.update { it.copy(isOrganizer = isOrganizer) }
             if (!isOrganizer) {
                 effectChannel.send(CreateEventEffect.ShowSnackbar(R.string.error_only_organizers_can_create_events))
@@ -101,6 +125,41 @@ class CreateEventViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun loadExistingEvent(targetEventId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingEvent = true) }
+            getEventDetailsUseCase(targetEventId)
+                .onSuccess { existingEvent ->
+                    val parsedDateMillis = parseEventDateMillis(existingEvent.eventDate)
+                    _uiState.update { state ->
+                        val matchedCategoryId = existingEvent.categoryId
+                            ?: state.categories.find { it.name.equals(existingEvent.categoryName, ignoreCase = true) }?.id
+                            ?: state.selectedCategoryId
+                        val resolvedLat = existingEvent.location.latitude ?: state.latitude
+                        val resolvedLng = existingEvent.location.longitude ?: state.longitude
+                        state.copy(
+                            isLoadingEvent = false,
+                            title = existingEvent.title,
+                            description = existingEvent.description,
+                            selectedCategoryId = matchedCategoryId,
+                            dateTimeMillis = parsedDateMillis,
+                            address = existingEvent.location.address,
+                            latitude = resolvedLat,
+                            longitude = resolvedLng,
+                            tempMapLatitude = resolvedLat,
+                            tempMapLongitude = resolvedLng,
+                            volunteerQuotaText = existingEvent.volunteerQuota.toString(),
+                            photoUrls = existingEvent.photos
+                        )
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoadingEvent = false, generalErrorResId = R.string.error_network) }
+                    effectChannel.send(CreateEventEffect.ShowSnackbar(R.string.error_network))
+                }
         }
     }
 
@@ -142,7 +201,7 @@ class CreateEventViewModel @Inject constructor(
             hasError = true
         }
 
-        if (dateTimeMillis == null || dateTimeMillis <= System.currentTimeMillis()) {
+        if (dateTimeMillis == null || (!state.isEditMode && dateTimeMillis <= System.currentTimeMillis())) {
             dateError = R.string.error_event_date_in_past
             hasError = true
         }
@@ -173,27 +232,68 @@ class CreateEventViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, generalErrorResId = null) }
-            val result = createEventUseCase(
-                title = title,
-                description = description,
-                categoryId = categoryId,
-                dateTimeMillis = dateTimeMillis!!,
-                address = address,
-                latitude = state.latitude,
-                longitude = state.longitude,
-                volunteerQuota = quota,
-                photoUrls = state.photoUrls
-            )
+            val result = if (state.isEditMode && !state.eventId.isNullOrBlank()) {
+                updateEventUseCase(
+                    eventId = state.eventId,
+                    title = title,
+                    description = description,
+                    categoryId = categoryId,
+                    dateTimeMillis = dateTimeMillis!!,
+                    address = address,
+                    latitude = state.latitude,
+                    longitude = state.longitude,
+                    volunteerQuota = quota,
+                    photoUrls = state.photoUrls
+                )
+            } else {
+                createEventUseCase(
+                    title = title,
+                    description = description,
+                    categoryId = categoryId,
+                    dateTimeMillis = dateTimeMillis!!,
+                    address = address,
+                    latitude = state.latitude,
+                    longitude = state.longitude,
+                    volunteerQuota = quota,
+                    photoUrls = state.photoUrls
+                )
+            }
 
             result.onSuccess {
                 _uiState.update { it.copy(isSubmitting = false) }
-                effectChannel.send(CreateEventEffect.ShowSnackbar(R.string.event_create_success))
+                val messageRes = if (state.isEditMode) {
+                    R.string.event_update_success
+                } else {
+                    R.string.event_create_success
+                }
+                effectChannel.send(CreateEventEffect.ShowSnackbar(messageRes))
                 effectChannel.send(CreateEventEffect.NavigateBack)
             }.onFailure {
                 _uiState.update { it.copy(isSubmitting = false, generalErrorResId = R.string.error_network) }
                 effectChannel.send(CreateEventEffect.ShowSnackbar(R.string.error_network))
             }
         }
+    }
+
+    private fun parseEventDateMillis(eventDate: String): Long {
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        for (pattern in patterns) {
+            val parsed = runCatching {
+                SimpleDateFormat(pattern, Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }.parse(eventDate)?.time
+            }.getOrNull()
+            if (parsed != null && parsed > 0L) {
+                return parsed
+            }
+        }
+        return System.currentTimeMillis() + 86_400_000L
     }
 
     private fun sendEffect(effect: CreateEventEffect) {

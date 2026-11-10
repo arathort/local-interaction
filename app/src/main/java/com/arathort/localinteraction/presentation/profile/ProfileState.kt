@@ -23,6 +23,7 @@ data class ProfileState(
     val editPhone: String = "",
     val editBio: String = "",
     val isSavingProfile: Boolean = false,
+    val isUploadingAvatar: Boolean = false,
     val isLogoutDialogVisible: Boolean = false,
     val withdrawConfirmationApplicationId: String? = null,
     val isWithdrawing: Boolean = false,

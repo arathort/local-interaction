@@ -3,6 +3,7 @@ package com.arathort.localinteraction.data.repository
 import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiService
 import com.arathort.localinteraction.data.dto.ProfileUpdateDto
 import com.arathort.localinteraction.data.mapper.toDomain
+import com.arathort.localinteraction.data.util.MultipartFileHelper
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.repository.ProfileRepository
@@ -13,7 +14,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ProfileRepositoryImpl @Inject constructor(
-    private val apiService: LocalInteractionApiService
+    private val apiService: LocalInteractionApiService,
+    private val multipartFileHelper: MultipartFileHelper
 ) : ProfileRepository {
 
     override suspend fun getMyProfile(): Result<User> = runCatching {
@@ -35,6 +37,18 @@ class ProfileRepositoryImpl @Inject constructor(
             description = bio.ifBlank { null }
         )
         apiService.updateMyProfile(request).toDomain()
+    }
+
+    override suspend fun uploadAvatar(uriString: String): Result<User> = runCatching {
+        val part = multipartFileHelper.createPartFromUri("file", uriString)
+            ?: throw IllegalArgumentException("Invalid image URI")
+        apiService.uploadAvatar(part)
+        apiService.getMyProfile().toDomain()
+    }
+
+    override suspend fun deleteAvatar(): Result<User> = runCatching {
+        apiService.deleteAvatar()
+        apiService.getMyProfile().toDomain()
     }
 
     override fun observeOrganizerEvents(organizerId: String): Flow<List<Event>> = flow {

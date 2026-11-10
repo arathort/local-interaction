@@ -10,8 +10,10 @@ import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
 import com.arathort.localinteraction.domain.usecase.CreateEventUseCase
+import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCategoriesUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
+import com.arathort.localinteraction.domain.usecase.UpdateEventUseCase
 import com.arathort.localinteraction.presentation.create_event.CreateEventEffect
 import com.arathort.localinteraction.presentation.create_event.CreateEventEvent
 import com.arathort.localinteraction.presentation.create_event.CreateEventViewModel
@@ -70,7 +72,19 @@ class CreateEventViewModelTest {
     private val fakeEventRepository = object : EventRepository {
         override fun observeOpenEvents(searchQuery: String, categoryIds: Set<String>) = flowOf(emptyList<Event>())
         override fun observeCategories(): Flow<List<Category>> = flowOf(sampleCategories)
-        override suspend fun getEventById(eventId: String) = Result.failure<Event>(UnsupportedOperationException())
+        override suspend fun getEventById(eventId: String): Result<Event> = Result.success(
+            Event(
+                id = eventId,
+                title = "Існуючий захід у парку",
+                description = "Детальний опис існуючого заходу з прибирання парку, який містить понад п'ятдесят символів.",
+                categoryId = "cat-animals",
+                categoryName = "Тварини",
+                eventDate = "2026-12-20T10:00:00Z",
+                location = GeoPoint(50.4800, 30.5100, "вул. Сагайдачного, 10"),
+                volunteerQuota = 12,
+                photos = listOf("/uploads/photo1.jpg")
+            )
+        )
         override fun observeCommentsForEvent(eventId: String) = flowOf(emptyList<Comment>())
         override suspend fun addComment(eventId: String, text: String, replyToCommentId: String?) = Result.failure<Comment>(UnsupportedOperationException())
         override suspend fun createEvent(
@@ -95,11 +109,37 @@ class CreateEventViewModelTest {
                 photos = photoUrls
             )
         )
+        override suspend fun updateEvent(
+            eventId: String,
+            title: String,
+            description: String,
+            categoryId: String,
+            dateTimeMillis: Long,
+            address: String,
+            location: GeoPoint,
+            volunteerQuota: Int,
+            photoUrls: List<String>
+        ): Result<Event> = Result.success(
+            Event(
+                id = eventId,
+                title = title,
+                description = description,
+                categoryId = categoryId,
+                categoryName = "Тварини",
+                eventDate = "2026-12-20T10:00:00Z",
+                location = location,
+                volunteerQuota = volunteerQuota,
+                photos = photoUrls
+            )
+        )
         override suspend fun updateEventStatus(eventId: String, newStatus: EventStatus) = Result.failure<Event>(UnsupportedOperationException())
     }
 
-    private fun createViewModel(): CreateEventViewModel = CreateEventViewModel(
+    private fun createViewModel(eventId: String? = null): CreateEventViewModel = CreateEventViewModel(
+        eventId = eventId,
         createEventUseCase = CreateEventUseCase(fakeEventRepository),
+        updateEventUseCase = UpdateEventUseCase(fakeEventRepository),
+        getEventDetailsUseCase = GetEventDetailsUseCase(fakeEventRepository),
         observeCategoriesUseCase = ObserveCategoriesUseCase(fakeEventRepository),
         observeCurrentUserUseCase = ObserveCurrentUserUseCase(fakeAuthRepository)
     )
@@ -308,6 +348,37 @@ class CreateEventViewModelTest {
 
         assertFalse(viewModel.uiState.value.isSubmitting)
         assertTrue(effects.contains(CreateEventEffect.ShowSnackbar(R.string.event_create_success)))
+        assertTrue(effects.contains(CreateEventEffect.NavigateBack))
+        collectJob.cancel()
+        effectJob.cancel()
+    }
+
+    @Test
+    fun `edit mode pre-populates existing event fields and calls updateEvent on submit`() = runTest {
+        val viewModel = createViewModel(eventId = "existing-event-42")
+        val effects = mutableListOf<CreateEventEffect>()
+        val effectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.effect.collect { effects.add(it) }
+        }
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isEditMode)
+        assertFalse(state.isLoadingEvent)
+        assertEquals("Існуючий захід у парку", state.title)
+        assertEquals("cat-animals", state.selectedCategoryId)
+        assertEquals("вул. Сагайдачного, 10", state.address)
+        assertEquals("12", state.volunteerQuotaText)
+        assertEquals(listOf("/uploads/photo1.jpg"), state.photoUrls)
+
+        viewModel.onEvent(CreateEventEvent.TitleChanged("Оновлений захід у парку"))
+        viewModel.onEvent(CreateEventEvent.SubmitClicked)
+        advanceUntilIdle()
+
+        assertTrue(effects.contains(CreateEventEffect.ShowSnackbar(R.string.event_update_success)))
         assertTrue(effects.contains(CreateEventEffect.NavigateBack))
         collectJob.cancel()
         effectJob.cancel()

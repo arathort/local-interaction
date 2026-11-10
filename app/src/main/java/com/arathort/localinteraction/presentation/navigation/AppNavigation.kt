@@ -24,6 +24,7 @@ import com.arathort.localinteraction.R
 import com.arathort.localinteraction.presentation.admin.AdminPanelRoute
 import com.arathort.localinteraction.presentation.auth.AuthRoute
 import com.arathort.localinteraction.presentation.create_event.CreateEventRoute
+import com.arathort.localinteraction.presentation.create_event.CreateEventViewModel
 import com.arathort.localinteraction.presentation.event_details.EventDetailsRoute
 import com.arathort.localinteraction.presentation.event_details.EventDetailsViewModel
 import com.arathort.localinteraction.presentation.home.HomeRoute
@@ -80,6 +81,9 @@ fun AppNavigation(
                     onNavigateToManageApplications = { eventId ->
                         backStack.add(AppDestination.ManageApplications(eventId))
                     },
+                    onNavigateToEditEvent = { eventId ->
+                        backStack.add(AppDestination.CreateEditEvent(eventId))
+                    },
                     onNavigateToProfile = { userId ->
                         backStack.add(AppDestination.Profile(userId))
                     },
@@ -121,8 +125,12 @@ fun AppNavigation(
                 )
             }
 
-            entry<AppDestination.CreateEditEvent> {
+            entry<AppDestination.CreateEditEvent> { key ->
+                val viewModel = hiltViewModel<CreateEventViewModel, CreateEventViewModel.Factory>(
+                    creationCallback = { factory -> factory.create(key.eventId) }
+                )
                 CreateEventRoute(
+                    viewModel = viewModel,
                     onBack = { backStack.removeLastOrNull() },
                     onNavigateToEventDetails = { eventId ->
                         backStack.add(AppDestination.EventDetails(eventId))

@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +63,7 @@ import com.arathort.localinteraction.domain.model.GeoPoint
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -272,7 +274,18 @@ fun EventSummaryCard(
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.cardElevation)
     ) {
-        Column(modifier = Modifier.padding(Dimensions.paddingLarge)) {
+        Column {
+            if (event.photos.isNotEmpty()) {
+                AppAsyncImage(
+                    model = event.photos.first(),
+                    contentDescription = event.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(Dimensions.eventCardCoverHeight),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Column(modifier = Modifier.padding(Dimensions.paddingLarge)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -350,6 +363,7 @@ fun EventSummaryCard(
                 ),
                 style = MaterialTheme.typography.labelMedium
             )
+            }
         }
     }
 }

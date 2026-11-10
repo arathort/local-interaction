@@ -26,5 +26,7 @@ data class EventDetailsState(
     @param:StringRes val applyErrorResId: Int? = null,
     val showStatusDialog: Boolean = false,
     val selectedNewStatus: EventStatus? = null,
+    val showDeleteEventDialog: Boolean = false,
+    val selectedPhotoUrlForPreview: String? = null,
     @param:StringRes val errorMessageResId: Int? = null
 )

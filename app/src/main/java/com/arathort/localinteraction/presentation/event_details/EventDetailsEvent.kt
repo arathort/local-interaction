@@ -24,5 +24,11 @@ sealed interface EventDetailsEvent {
     data object ConfirmDeleteComment : EventDetailsEvent
     data object DismissDeleteCommentDialog : EventDetailsEvent
     data class CommentAuthorClicked(val authorId: String) : EventDetailsEvent
+    data object EditEventClicked : EventDetailsEvent
+    data object DeleteEventClicked : EventDetailsEvent
+    data object ConfirmDeleteEvent : EventDetailsEvent
+    data object DismissDeleteEventDialog : EventDetailsEvent
+    data class PhotoClicked(val photoUrl: String) : EventDetailsEvent
+    data object DismissPhotoPreview : EventDetailsEvent
     data object BackClicked : EventDetailsEvent
 }

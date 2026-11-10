@@ -15,6 +15,7 @@ import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
 import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
 import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.DeleteEventUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventCommentsUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
@@ -164,7 +165,8 @@ class EventDetailsViewModelTest {
         updateEventStatusUseCase = UpdateEventStatusUseCase(fakeEventRepository),
         getEventCommentsUseCase = GetEventCommentsUseCase(fakeEventRepository),
         addEventCommentUseCase = AddEventCommentUseCase(fakeEventRepository),
-        deleteEventCommentUseCase = DeleteEventCommentUseCase(fakeEventRepository)
+        deleteEventCommentUseCase = DeleteEventCommentUseCase(fakeEventRepository),
+        deleteEventUseCase = DeleteEventUseCase(fakeEventRepository)
     )
 
     @Before
@@ -310,5 +312,31 @@ class EventDetailsViewModelTest {
         val state = viewModel.uiState.value
         assertNull(state.deletingCommentId)
         assertTrue(state.comments.isEmpty())
+    }
+
+    @Test
+    fun `EditEventClicked emits NavigateToEditEvent effect`() = runTest {
+        currentUserFlow.value = User(id = "user-organizer-1", role = UserRole.ORGANIZER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.EditEventClicked)
+
+        val effect = viewModel.effect.first()
+        assertEquals(EventDetailsEffect.NavigateToEditEvent("event-1"), effect)
+    }
+
+    @Test
+    fun `Deleting event closes dialog and emits ShowSnackbar and NavigateBack`() = runTest {
+        currentUserFlow.value = User(id = "user-organizer-1", role = UserRole.ORGANIZER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.DeleteEventClicked)
+        assertTrue(viewModel.uiState.value.showDeleteEventDialog)
+
+        viewModel.onEvent(EventDetailsEvent.ConfirmDeleteEvent)
+
+        assertFalse(viewModel.uiState.value.showDeleteEventDialog)
+        val firstEffect = viewModel.effect.first()
+        assertEquals(EventDetailsEffect.ShowSnackbar(R.string.event_delete_success), firstEffect)
     }
 }

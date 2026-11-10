@@ -9,6 +9,8 @@ sealed interface ProfileEvent {
     data class EditBioChanged(val value: String) : ProfileEvent
     data object SaveProfileClicked : ProfileEvent
     data object DismissEditProfileDialog : ProfileEvent
+    data class AvatarSelected(val uriString: String) : ProfileEvent
+    data object DeleteAvatarClicked : ProfileEvent
     data object LogoutClicked : ProfileEvent
     data object ConfirmLogoutClicked : ProfileEvent
     data object DismissLogoutDialog : ProfileEvent
