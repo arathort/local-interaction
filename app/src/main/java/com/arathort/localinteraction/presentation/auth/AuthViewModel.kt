@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.domain.usecase.ForgotPasswordUseCase
 import com.arathort.localinteraction.domain.usecase.LoginUseCase
+import com.arathort.localinteraction.domain.usecase.OAuthLoginUseCase
 import com.arathort.localinteraction.domain.usecase.RegisterUseCase
+import com.arathort.localinteraction.domain.usecase.ResetPasswordUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,10 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
-    private val registerUseCase: RegisterUseCase
+    private val registerUseCase: RegisterUseCase,
+    private val forgotPasswordUseCase: ForgotPasswordUseCase,
+    private val resetPasswordUseCase: ResetPasswordUseCase,
+    private val oauthLoginUseCase: OAuthLoginUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthState())
@@ -64,6 +70,82 @@ class AuthViewModel @Inject constructor(
                 it.copy(acceptedPrivacyPolicy = event.agreed, privacyPolicyErrorResId = null)
             }
             AuthEvent.RegisterSubmitted -> handleRegisterSubmit()
+
+            AuthEvent.OpenPasswordRecoveryClicked -> _uiState.update {
+                it.copy(
+                    showPasswordRecoveryDialog = true,
+                    recoveryStep = PasswordRecoveryStep.REQUEST_EMAIL,
+                    recoveryEmail = it.loginEmail.ifBlank { it.recoveryEmail },
+                    recoveryEmailErrorResId = null,
+                    resetTokenErrorResId = null,
+                    resetNewPasswordErrorResId = null,
+                    resetConfirmPasswordErrorResId = null
+                )
+            }
+            AuthEvent.DismissPasswordRecoveryDialog -> _uiState.update {
+                it.copy(
+                    showPasswordRecoveryDialog = false,
+                    isRecoveryLoading = false
+                )
+            }
+            is AuthEvent.RecoveryStepChanged -> _uiState.update {
+                it.copy(
+                    recoveryStep = event.step,
+                    recoveryEmailErrorResId = null,
+                    resetTokenErrorResId = null,
+                    resetNewPasswordErrorResId = null,
+                    resetConfirmPasswordErrorResId = null
+                )
+            }
+            is AuthEvent.RecoveryEmailChanged -> _uiState.update {
+                it.copy(recoveryEmail = event.email, recoveryEmailErrorResId = null)
+            }
+            AuthEvent.ForgotPasswordSubmitted -> handleForgotPasswordSubmit()
+            is AuthEvent.ResetTokenChanged -> _uiState.update {
+                it.copy(resetToken = event.token, resetTokenErrorResId = null)
+            }
+            is AuthEvent.ResetNewPasswordChanged -> _uiState.update {
+                it.copy(resetNewPassword = event.password, resetNewPasswordErrorResId = null)
+            }
+            AuthEvent.ToggleResetNewPasswordVisibility -> _uiState.update {
+                it.copy(isResetNewPasswordVisible = !it.isResetNewPasswordVisible)
+            }
+            is AuthEvent.ResetConfirmPasswordChanged -> _uiState.update {
+                it.copy(resetConfirmPassword = event.password, resetConfirmPasswordErrorResId = null)
+            }
+            AuthEvent.ToggleResetConfirmPasswordVisibility -> _uiState.update {
+                it.copy(isResetConfirmPasswordVisible = !it.isResetConfirmPasswordVisible)
+            }
+            AuthEvent.ResetPasswordSubmitted -> handleResetPasswordSubmit()
+
+            is AuthEvent.OAuthProviderClicked -> _uiState.update {
+                it.copy(
+                    activeOAuthProvider = event.provider,
+                    oauthTokenInput = "",
+                    oauthTokenErrorResId = null,
+                    oauthSelectedRole = it.selectedRole?.takeIf { role ->
+                        role == UserRole.VOLUNTEER || role == UserRole.ORGANIZER
+                    } ?: UserRole.VOLUNTEER,
+                    oauthAcceptedPrivacyPolicy = true,
+                    oauthPrivacyErrorResId = null
+                )
+            }
+            AuthEvent.DismissOAuthDialog -> _uiState.update {
+                it.copy(
+                    activeOAuthProvider = null,
+                    isOAuthLoading = false
+                )
+            }
+            is AuthEvent.OAuthTokenChanged -> _uiState.update {
+                it.copy(oauthTokenInput = event.token, oauthTokenErrorResId = null)
+            }
+            is AuthEvent.OAuthRoleSelected -> _uiState.update {
+                it.copy(oauthSelectedRole = event.role)
+            }
+            is AuthEvent.OAuthPrivacyConsentChanged -> _uiState.update {
+                it.copy(oauthAcceptedPrivacyPolicy = event.agreed, oauthPrivacyErrorResId = null)
+            }
+            AuthEvent.OAuthLoginSubmitted -> handleOAuthLoginSubmit()
 
             AuthEvent.BackClicked -> {
                 viewModelScope.launch {
@@ -187,6 +269,170 @@ class AuthViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                    }
+                }
+        }
+    }
+
+    private fun handleForgotPasswordSubmit() {
+        val state = _uiState.value
+        val email = state.recoveryEmail.trim()
+
+        if (!isValidEmail(email)) {
+            _uiState.update {
+                it.copy(recoveryEmailErrorResId = R.string.error_invalid_email)
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRecoveryLoading = true) }
+            forgotPasswordUseCase(email = email)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isRecoveryLoading = false,
+                            recoveryStep = PasswordRecoveryStep.CONFIRM_RESET
+                        )
+                    }
+                    _effect.send(AuthEffect.ShowSnackbar(R.string.auth_recovery_code_sent_success))
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isRecoveryLoading = false) }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                    }
+                }
+        }
+    }
+
+    private fun handleResetPasswordSubmit() {
+        val state = _uiState.value
+        val token = state.resetToken.trim()
+        val newPassword = state.resetNewPassword
+        val confirmPassword = state.resetConfirmPassword
+
+        var hasError = false
+        var tokenError: Int? = null
+        var passwordError: Int? = null
+        var confirmError: Int? = null
+
+        if (token.isBlank()) {
+            tokenError = R.string.error_reset_token_required
+            hasError = true
+        }
+        if (newPassword.length < 8) {
+            passwordError = R.string.error_password_too_short
+            hasError = true
+        }
+        if (newPassword != confirmPassword) {
+            confirmError = R.string.error_passwords_do_not_match
+            hasError = true
+        }
+
+        if (hasError) {
+            _uiState.update {
+                it.copy(
+                    resetTokenErrorResId = tokenError,
+                    resetNewPasswordErrorResId = passwordError,
+                    resetConfirmPasswordErrorResId = confirmError
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRecoveryLoading = true) }
+            resetPasswordUseCase(
+                resetToken = token,
+                newPassword = newPassword,
+                newPasswordConfirm = confirmPassword
+            )
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isRecoveryLoading = false,
+                            showPasswordRecoveryDialog = false,
+                            loginEmail = it.recoveryEmail.ifBlank { it.loginEmail },
+                            loginPassword = "",
+                            resetToken = "",
+                            resetNewPassword = "",
+                            resetConfirmPassword = ""
+                        )
+                    }
+                    _effect.send(AuthEffect.ShowSnackbar(R.string.auth_reset_password_success))
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isRecoveryLoading = false) }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                    }
+                }
+        }
+    }
+
+    private fun handleOAuthLoginSubmit() {
+        val state = _uiState.value
+        val provider = state.activeOAuthProvider ?: return
+        val token = state.oauthTokenInput.trim()
+        val role = state.oauthSelectedRole
+        val agreedToRules = state.oauthAcceptedPrivacyPolicy
+
+        var hasError = false
+        var tokenError: Int? = null
+        var privacyError: Int? = null
+
+        if (token.isBlank()) {
+            tokenError = R.string.error_oauth_token_required
+            hasError = true
+        }
+        if (!agreedToRules) {
+            privacyError = R.string.error_privacy_consent_required
+            hasError = true
+        }
+
+        if (hasError) {
+            _uiState.update {
+                it.copy(
+                    oauthTokenErrorResId = tokenError,
+                    oauthPrivacyErrorResId = privacyError
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOAuthLoading = true) }
+            oauthLoginUseCase(
+                provider = provider,
+                token = token,
+                role = role,
+                agreedToRules = agreedToRules
+            )
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            isOAuthLoading = false,
+                            activeOAuthProvider = null,
+                            oauthTokenInput = ""
+                        )
+                    }
+                    _effect.send(AuthEffect.ShowSnackbar(R.string.auth_login_success))
+                    _effect.send(AuthEffect.NavigateBack)
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isOAuthLoading = false) }
                     val message = error.message.orEmpty()
                     if (message.isNotBlank()) {
                         _effect.send(AuthEffect.ShowSnackbarText(message))

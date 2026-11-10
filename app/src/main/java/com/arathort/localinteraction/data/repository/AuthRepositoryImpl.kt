@@ -3,8 +3,12 @@ package com.arathort.localinteraction.data.repository
 import com.arathort.localinteraction.data.datasource.local.TokenStorage
 import com.arathort.localinteraction.data.datasource.remote.JwtTokenManager
 import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiService
+import com.arathort.localinteraction.data.dto.ForgotPasswordRequestDto
+import com.arathort.localinteraction.data.dto.OAuthLoginRequestDto
+import com.arathort.localinteraction.data.dto.ResetPasswordConfirmRequestDto
 import com.arathort.localinteraction.data.dto.UserCreateDto
 import com.arathort.localinteraction.data.mapper.toDomain
+import com.arathort.localinteraction.domain.model.OAuthProvider
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.AuthRepository
@@ -53,6 +57,46 @@ class AuthRepositoryImpl @Inject constructor(
         )
         apiService.register(request)
         login(trimmedEmail, password).getOrThrow()
+    }
+
+    override suspend fun oauthLogin(
+        provider: OAuthProvider,
+        token: String,
+        role: UserRole,
+        agreedToRules: Boolean
+    ): Result<User> = runCatching {
+        val request = OAuthLoginRequestDto(
+            token = token.trim(),
+            role = role.apiValue,
+            agreedToRules = agreedToRules
+        )
+        val tokenDto = apiService.oauthLogin(
+            provider = provider.apiValue,
+            request = request
+        )
+        tokenStorage.saveAccessToken(tokenDto.accessToken)
+        jwtTokenManager.updateToken(tokenDto.accessToken)
+        val profile = apiService.getMyProfile().toDomain()
+        _currentUser.value = profile
+        profile
+    }
+
+    override suspend fun forgotPassword(email: String): Result<Unit> = runCatching {
+        apiService.forgotPassword(ForgotPasswordRequestDto(email = email.trim()))
+    }
+
+    override suspend fun resetPassword(
+        resetToken: String,
+        newPassword: String,
+        newPasswordConfirm: String
+    ): Result<Unit> = runCatching {
+        apiService.resetPassword(
+            ResetPasswordConfirmRequestDto(
+                resetToken = resetToken.trim(),
+                newPassword = newPassword,
+                newPasswordConfirm = newPasswordConfirm
+            )
+        )
     }
 
     override suspend fun logout(): Result<Unit> = runCatching {
