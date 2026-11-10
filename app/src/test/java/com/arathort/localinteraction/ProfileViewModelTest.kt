@@ -15,11 +15,13 @@ import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.ProfileRepository
+import com.arathort.localinteraction.domain.usecase.DeleteAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyProfileUseCase
 import com.arathort.localinteraction.domain.usecase.GetUserProfileUseCase
 import com.arathort.localinteraction.domain.usecase.LogoutUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateProfileUseCase
+import com.arathort.localinteraction.domain.usecase.UploadAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
 import com.arathort.localinteraction.presentation.profile.ProfileEffect
 import com.arathort.localinteraction.presentation.profile.ProfileEvent
@@ -117,6 +119,10 @@ class ProfileViewModelTest {
                     description = bio
                 )
             )
+        override suspend fun uploadAvatar(uriString: String): Result<User> =
+            Result.success(testVolunteerUser.copy(avatarUrl = "/uploads/avatar_new.jpg"))
+        override suspend fun deleteAvatar(): Result<User> =
+            Result.success(testVolunteerUser.copy(avatarUrl = null))
         override fun observeOrganizerEvents(organizerId: String): Flow<List<Event>> = flowOf(emptyList())
     }
 
@@ -148,6 +154,8 @@ class ProfileViewModelTest {
             getMyProfileUseCase = GetMyProfileUseCase(fakeProfileRepository),
             getUserProfileUseCase = GetUserProfileUseCase(fakeProfileRepository),
             updateProfileUseCase = UpdateProfileUseCase(fakeProfileRepository),
+            uploadAvatarUseCase = UploadAvatarUseCase(fakeProfileRepository),
+            deleteAvatarUseCase = DeleteAvatarUseCase(fakeProfileRepository),
             withdrawApplicationUseCase = WithdrawApplicationUseCase(fakeApplicationRepository),
             logoutUseCase = LogoutUseCase(fakeAuthRepository),
             observeCurrentUserUseCase = ObserveCurrentUserUseCase(fakeAuthRepository),
@@ -303,5 +311,27 @@ class ProfileViewModelTest {
         assertEquals(UserRole.GUEST, currentUserFlow.value.role)
         collectJob.cancel()
         effectJob.cancel()
+    }
+
+    @Test
+    fun `uploading and deleting avatar updates user avatarUrl in state`() = runTest {
+        val viewModel = createViewModel()
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        viewModel.onEvent(ProfileEvent.AvatarSelected("content://media/external/images/media/10"))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isUploadingAvatar)
+        assertEquals("/uploads/avatar_new.jpg", viewModel.uiState.value.user?.avatarUrl)
+
+        viewModel.onEvent(ProfileEvent.DeleteAvatarClicked)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isUploadingAvatar)
+        assertNull(viewModel.uiState.value.user?.avatarUrl)
+        collectJob.cancel()
     }
 }

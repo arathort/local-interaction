@@ -299,4 +299,18 @@
     <string name="admin_user_block_reason">Причина: %1$s</string>
     <string name="admin_nav_button_desc">Панель адміністратора</string>
     <string name="admin_profile_entry_button">Адміністративна панель</string>
+
+    <string name="event_form_save_changes">Зберегти зміни</string>
+    <string name="event_update_success">Зміни заходу успішно збережено</string>
+    <string name="event_delete_title">Видалення заходу</string>
+    <string name="event_delete_message">Ви дійсно бажаєте видалити цей захід? Цю дію неможливо скасувати.</string>
+    <string name="event_delete_success">Захід успішно видалено</string>
+    <string name="event_details_rejection_reason_title">Захід відхилено модератором</string>
+    <string name="event_details_rejection_reason_format">Причина: %1$s</string>
+    <string name="event_details_edit_rejected_action">Відредагувати захід</string>
+    <string name="event_details_photo_preview_title">Перегляд фотографії</string>
+    <string name="profile_change_avatar_action">Змінити фото</string>
+    <string name="profile_delete_avatar_action">Видалити фото</string>
+    <string name="profile_avatar_updated_success">Фото профілю оновлено</string>
+    <string name="profile_avatar_deleted_success">Фото профілю видалено</string>
 </resources>

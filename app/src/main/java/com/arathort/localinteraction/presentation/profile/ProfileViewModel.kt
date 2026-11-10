@@ -6,12 +6,15 @@ import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.ProfileRepository
+import com.arathort.localinteraction.domain.usecase.DeleteAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyProfileUseCase
 import com.arathort.localinteraction.domain.usecase.GetUserProfileUseCase
 import com.arathort.localinteraction.domain.usecase.LogoutUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateProfileUseCase
+import com.arathort.localinteraction.domain.usecase.UploadAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
+import com.arathort.localinteraction.presentation.components.AppImageMemoryCache
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -32,6 +35,8 @@ class ProfileViewModel @AssistedInject constructor(
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
+    private val uploadAvatarUseCase: UploadAvatarUseCase,
+    private val deleteAvatarUseCase: DeleteAvatarUseCase,
     private val withdrawApplicationUseCase: WithdrawApplicationUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
@@ -63,6 +68,8 @@ class ProfileViewModel @AssistedInject constructor(
             is ProfileEvent.EditBioChanged -> _uiState.update { it.copy(editBio = event.value) }
             is ProfileEvent.SaveProfileClicked -> saveProfile()
             is ProfileEvent.DismissEditProfileDialog -> _uiState.update { it.copy(isEditProfileDialogVisible = false, errorMessageResId = null) }
+            is ProfileEvent.AvatarSelected -> uploadAvatar(event.uriString)
+            is ProfileEvent.DeleteAvatarClicked -> deleteAvatar()
             is ProfileEvent.LogoutClicked -> _uiState.update { it.copy(isLogoutDialogVisible = true) }
             is ProfileEvent.ConfirmLogoutClicked -> logout()
             is ProfileEvent.DismissLogoutDialog -> _uiState.update { it.copy(isLogoutDialogVisible = false) }
@@ -204,6 +211,52 @@ class ProfileViewModel @AssistedInject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun uploadAvatar(uriString: String) {
+        if (uriString.isBlank()) return
+        viewModelScope.launch {
+            val previousUrl = _uiState.value.user?.avatarUrl
+            _uiState.update { it.copy(isUploadingAvatar = true) }
+            uploadAvatarUseCase(uriString)
+                .onSuccess { updatedUser ->
+                    AppImageMemoryCache.invalidate(previousUrl)
+                    AppImageMemoryCache.invalidate(updatedUser.avatarUrl)
+                    _uiState.update {
+                        it.copy(
+                            isUploadingAvatar = false,
+                            user = updatedUser
+                        )
+                    }
+                    effectChannel.send(ProfileEffect.ShowSnackbar(R.string.profile_avatar_updated_success))
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isUploadingAvatar = false) }
+                    effectChannel.send(ProfileEffect.ShowSnackbar(R.string.error_network))
+                }
+        }
+    }
+
+    private fun deleteAvatar() {
+        viewModelScope.launch {
+            val previousUrl = _uiState.value.user?.avatarUrl
+            _uiState.update { it.copy(isUploadingAvatar = true) }
+            deleteAvatarUseCase()
+                .onSuccess { updatedUser ->
+                    AppImageMemoryCache.invalidate(previousUrl)
+                    _uiState.update {
+                        it.copy(
+                            isUploadingAvatar = false,
+                            user = updatedUser
+                        )
+                    }
+                    effectChannel.send(ProfileEffect.ShowSnackbar(R.string.profile_avatar_deleted_success))
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isUploadingAvatar = false) }
+                    effectChannel.send(ProfileEffect.ShowSnackbar(R.string.error_network))
+                }
         }
     }
 

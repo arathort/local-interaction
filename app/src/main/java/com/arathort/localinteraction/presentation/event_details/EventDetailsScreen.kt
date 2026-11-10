@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -65,6 +66,7 @@ import com.arathort.localinteraction.domain.model.GeoPoint
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
+import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 
@@ -74,6 +76,7 @@ fun EventDetailsRoute(
     onNavigateToAuth: () -> Unit,
     onNavigateToManageApplications: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateToEditEvent: (String) -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
     onNavigateToWriteReview: ((String, String, String, String) -> Unit)? = null,
     viewModel: EventDetailsViewModel = hiltViewModel()
@@ -88,6 +91,7 @@ fun EventDetailsRoute(
                 EventDetailsEffect.NavigateBack -> onBack()
                 EventDetailsEffect.NavigateToAuth -> onNavigateToAuth()
                 is EventDetailsEffect.NavigateToManageApplications -> onNavigateToManageApplications(effect.eventId)
+                is EventDetailsEffect.NavigateToEditEvent -> onNavigateToEditEvent(effect.eventId)
                 is EventDetailsEffect.NavigateToProfile -> onNavigateToProfile(effect.userId)
                 is EventDetailsEffect.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(
@@ -129,6 +133,10 @@ fun EventDetailsScreen(
     onRateOrganizer: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
+    val canManageEvent = state.event != null &&
+        ((state.currentUser.role == UserRole.ORGANIZER && state.event.organizer.id == state.currentUser.id) ||
+            state.currentUser.role == UserRole.ADMIN)
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -141,6 +149,23 @@ fun EventDetailsScreen(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.action_back)
                         )
+                    }
+                },
+                actions = {
+                    if (canManageEvent) {
+                        IconButton(onClick = { onEvent(EventDetailsEvent.EditEventClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_edit),
+                                contentDescription = stringResource(R.string.action_edit)
+                            )
+                        }
+                        IconButton(onClick = { onEvent(EventDetailsEvent.DeleteEventClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = stringResource(R.string.action_delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             )
@@ -215,6 +240,21 @@ fun EventDetailsScreen(
                 onDismiss = { onEvent(EventDetailsEvent.DismissDeleteCommentDialog) }
             )
         }
+
+        if (state.showDeleteEventDialog) {
+            DeleteEventConfirmDialog(
+                isDeleting = state.isActionLoading,
+                onConfirm = { onEvent(EventDetailsEvent.ConfirmDeleteEvent) },
+                onDismiss = { onEvent(EventDetailsEvent.DismissDeleteEventDialog) }
+            )
+        }
+
+        if (state.selectedPhotoUrlForPreview != null) {
+            FullScreenPhotoPreviewDialog(
+                photoUrl = state.selectedPhotoUrlForPreview,
+                onDismiss = { onEvent(EventDetailsEvent.DismissPhotoPreview) }
+            )
+        }
     }
 }
 
@@ -226,11 +266,61 @@ private fun EventDetailsContent(
     modifier: Modifier = Modifier,
     onOrganizerClicked: () -> Unit = {}
 ) {
+    val isOrganizerOwner = state.currentUser.role == UserRole.ORGANIZER &&
+        event.organizer.id == state.currentUser.id
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
             .padding(Dimensions.paddingLarge)
     ) {
+        if (!event.rejectionReason.isNullOrBlank()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(Dimensions.paddingMedium),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                ) {
+                    Text(
+                        text = stringResource(R.string.event_details_rejection_reason_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.event_details_rejection_reason_format,
+                            event.rejectionReason
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    if (isOrganizerOwner) {
+                        OutlinedButton(
+                            onClick = { onEvent(EventDetailsEvent.EditEventClicked) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_edit),
+                                contentDescription = null,
+                                modifier = Modifier.size(Dimensions.iconSmall)
+                            )
+                            Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                            Text(text = stringResource(R.string.event_details_edit_rejected_action))
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -314,18 +404,16 @@ private fun EventDetailsContent(
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)) {
                 items(event.photos) { photoUrl ->
                     Card(
+                        onClick = { onEvent(EventDetailsEvent.PhotoClicked(photoUrl)) },
                         modifier = Modifier.size(Dimensions.eventDetailsPhotoSize),
                         shape = RoundedCornerShape(Dimensions.cardCornerRadius)
                     ) {
-                        Box(
+                        AppAsyncImage(
+                            model = photoUrl,
+                            contentDescription = event.title,
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = photoUrl.takeLast(10),
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
@@ -618,18 +706,24 @@ private fun CommentCard(
                         MaterialTheme.colorScheme.primaryContainer
                     }
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = comment.authorName.trim().take(1).uppercase().ifBlank { "U" },
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isOrganizerAuthor) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                        )
-                    }
+                    AppAsyncImage(
+                        model = comment.authorAvatarUrl,
+                        contentDescription = comment.authorName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        fallback = {
+                            Text(
+                                text = comment.authorName.trim().take(1).uppercase().ifBlank { "U" },
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isOrganizerAuthor) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                }
+                            )
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
@@ -767,6 +861,72 @@ private fun DeleteCommentConfirmDialog(
 }
 
 @Composable
+private fun DeleteEventConfirmDialog(
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.event_delete_title)) },
+        text = { Text(text = stringResource(R.string.event_delete_message)) },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                        strokeWidth = Dimensions.progressIndicatorStrokeWidth,
+                        color = MaterialTheme.colorScheme.onError
+                    )
+                } else {
+                    Text(text = stringResource(R.string.action_delete))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isDeleting) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun FullScreenPhotoPreviewDialog(
+    photoUrl: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.event_details_photo_preview_title)) },
+        text = {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(Dimensions.photoPreviewHeight),
+                shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+            ) {
+                AppAsyncImage(
+                    model = photoUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_back))
+            }
+        }
+    )
+}
+
+@Composable
 private fun QuotaProgressCard(
     approvedCount: Int,
     quota: Int,
@@ -819,13 +979,19 @@ private fun OrganizerCard(
                 shape = RoundedCornerShape(Dimensions.avatarMedium),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = organizer.fullName?.take(1).orEmpty().ifBlank { "O" },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                AppAsyncImage(
+                    model = organizer.avatarUrl,
+                    contentDescription = organizer.fullName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    fallback = {
+                        Text(
+                            text = organizer.fullName?.take(1).orEmpty().ifBlank { "O" },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.width(Dimensions.spacingMedium))

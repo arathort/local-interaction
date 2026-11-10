@@ -1,5 +1,9 @@
 package com.arathort.localinteraction.presentation.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +46,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -61,6 +66,7 @@ import com.arathort.localinteraction.domain.model.Review
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.model.UserStatus
+import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 
@@ -113,6 +119,14 @@ fun ProfileScreen(
     onNavigateToAdminPanel: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
+    val avatarPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            onEvent(ProfileEvent.AvatarSelected(uri.toString()))
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -188,7 +202,19 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(Dimensions.spacingMedium)
                 ) {
                     item {
-                        ProfileHeader(user = user)
+                        ProfileHeader(
+                            user = user,
+                            isCurrentUser = state.isCurrentUser,
+                            isUploadingAvatar = state.isUploadingAvatar,
+                            onChangeAvatarClick = {
+                                avatarPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                            onDeleteAvatarClick = {
+                                onEvent(ProfileEvent.DeleteAvatarClicked)
+                            }
+                        )
                     }
 
                     item {
@@ -356,8 +382,16 @@ private fun GuestProfileContent(
 @Composable
 private fun ProfileHeader(
     user: User,
+    isCurrentUser: Boolean = false,
+    isUploadingAvatar: Boolean = false,
+    onChangeAvatarClick: () -> Unit = {},
+    onDeleteAvatarClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val initial = user.fullName?.trim()?.take(1).orEmpty().ifBlank {
+        user.email.take(1).uppercase()
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = Dimensions.cardElevation),
@@ -370,24 +404,83 @@ private fun ProfileHeader(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
-                modifier = Modifier.size(Dimensions.avatarExtraLarge),
+                modifier = Modifier
+                    .size(Dimensions.avatarExtraLarge)
+                    .then(
+                        if (isCurrentUser && !isUploadingAvatar) {
+                            Modifier.clickable(onClick = onChangeAvatarClick)
+                        } else {
+                            Modifier
+                        }
+                    ),
                 shape = RoundedCornerShape(Dimensions.avatarExtraLarge),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    val initial = user.fullName?.trim()?.take(1).orEmpty().ifBlank {
-                        user.email.take(1).uppercase()
+                    if (isUploadingAvatar) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                            strokeWidth = Dimensions.progressIndicatorStrokeWidth
+                        )
+                    } else {
+                        AppAsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = user.fullName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            fallback = {
+                                Text(
+                                    text = initial,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        )
                     }
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+            if (isCurrentUser) {
+                Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onChangeAvatarClick,
+                        enabled = !isUploadingAvatar
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_photo_library),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.iconSmall)
+                        )
+                        Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                        Text(text = stringResource(R.string.profile_change_avatar_action))
+                    }
+                    if (!user.avatarUrl.isNullOrBlank()) {
+                        TextButton(
+                            onClick = onDeleteAvatarClick,
+                            enabled = !isUploadingAvatar
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_delete),
+                                contentDescription = null,
+                                modifier = Modifier.size(Dimensions.iconSmall),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(Dimensions.spacingExtraSmall))
+                            Text(
+                                text = stringResource(R.string.profile_delete_avatar_action),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+            }
 
             Text(
                 text = user.fullName?.ifBlank { null } ?: user.email,

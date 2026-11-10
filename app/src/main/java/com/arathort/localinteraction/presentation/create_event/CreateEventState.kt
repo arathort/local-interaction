@@ -4,7 +4,9 @@ import androidx.annotation.StringRes
 import com.arathort.localinteraction.domain.model.Category
 
 data class CreateEventState(
+    val eventId: String? = null,
     val isLoadingCategories: Boolean = false,
+    val isLoadingEvent: Boolean = false,
     val isSubmitting: Boolean = false,
     val isOrganizer: Boolean = false,
     val title: String = "",
@@ -28,4 +30,7 @@ data class CreateEventState(
     @param:StringRes val dateErrorResId: Int? = null,
     @param:StringRes val quotaErrorResId: Int? = null,
     @param:StringRes val generalErrorResId: Int? = null
-)
+) {
+    val isEditMode: Boolean
+        get() = !eventId.isNullOrBlank()
+}

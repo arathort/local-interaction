@@ -7,6 +7,7 @@ import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
 import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.DeleteEventUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventCommentsUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
@@ -37,7 +38,8 @@ class EventDetailsViewModel @AssistedInject constructor(
     private val updateEventStatusUseCase: UpdateEventStatusUseCase,
     private val getEventCommentsUseCase: GetEventCommentsUseCase,
     private val addEventCommentUseCase: AddEventCommentUseCase,
-    private val deleteEventCommentUseCase: DeleteEventCommentUseCase
+    private val deleteEventCommentUseCase: DeleteEventCommentUseCase,
+    private val deleteEventUseCase: DeleteEventUseCase
 ) : ViewModel() {
 
     @AssistedFactory
@@ -115,11 +117,50 @@ class EventDetailsViewModel @AssistedInject constructor(
                     }
                 }
             }
+            EventDetailsEvent.EditEventClicked -> {
+                viewModelScope.launch {
+                    _effect.send(EventDetailsEffect.NavigateToEditEvent(eventId))
+                }
+            }
+            EventDetailsEvent.DeleteEventClicked -> {
+                _uiState.update { it.copy(showDeleteEventDialog = true) }
+            }
+            EventDetailsEvent.ConfirmDeleteEvent -> handleConfirmDeleteEvent()
+            EventDetailsEvent.DismissDeleteEventDialog -> {
+                _uiState.update { it.copy(showDeleteEventDialog = false) }
+            }
+            is EventDetailsEvent.PhotoClicked -> {
+                _uiState.update { it.copy(selectedPhotoUrlForPreview = event.photoUrl) }
+            }
+            EventDetailsEvent.DismissPhotoPreview -> {
+                _uiState.update { it.copy(selectedPhotoUrlForPreview = null) }
+            }
             EventDetailsEvent.BackClicked -> {
                 viewModelScope.launch {
                     _effect.send(EventDetailsEffect.NavigateBack)
                 }
             }
+        }
+    }
+
+    private fun handleConfirmDeleteEvent() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionLoading = true) }
+            deleteEventUseCase(eventId)
+                .onSuccess {
+                    _uiState.update { it.copy(isActionLoading = false, showDeleteEventDialog = false) }
+                    _effect.send(EventDetailsEffect.ShowSnackbar(R.string.event_delete_success))
+                    _effect.send(EventDetailsEffect.NavigateBack)
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isActionLoading = false, showDeleteEventDialog = false) }
+                    val message = error.message.orEmpty()
+                    if (message.isNotBlank()) {
+                        _effect.send(EventDetailsEffect.ShowSnackbarText(message))
+                    } else {
+                        _effect.send(EventDetailsEffect.ShowSnackbar(R.string.error_network))
+                    }
+                }
         }
     }
 

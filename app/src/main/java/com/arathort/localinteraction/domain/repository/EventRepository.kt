@@ -29,5 +29,17 @@ interface EventRepository {
         volunteerQuota: Int,
         photoUrls: List<String> = emptyList()
     ): Result<Event>
+    suspend fun updateEvent(
+        eventId: String,
+        title: String,
+        description: String,
+        categoryId: String,
+        dateTimeMillis: Long,
+        address: String,
+        location: GeoPoint,
+        volunteerQuota: Int,
+        photoUrls: List<String> = emptyList()
+    ): Result<Event> = Result.failure(UnsupportedOperationException())
+    suspend fun deleteEvent(eventId: String): Result<Unit> = Result.success(Unit)
     suspend fun updateEventStatus(eventId: String, newStatus: EventStatus): Result<Event>
 }

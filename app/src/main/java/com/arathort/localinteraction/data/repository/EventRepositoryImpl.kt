@@ -4,8 +4,10 @@ import com.arathort.localinteraction.data.datasource.remote.LocalInteractionApiS
 import com.arathort.localinteraction.data.dto.CommentCreateDto
 import com.arathort.localinteraction.data.dto.EventCreateDto
 import com.arathort.localinteraction.data.dto.EventStatusUpdateDto
+import com.arathort.localinteraction.data.dto.EventUpdateDto
 import com.arathort.localinteraction.data.dto.GeoLocationDto
 import com.arathort.localinteraction.data.mapper.toDomain
+import com.arathort.localinteraction.data.util.MultipartFileHelper
 import com.arathort.localinteraction.domain.model.Category
 import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.Event
@@ -23,7 +25,8 @@ import javax.inject.Singleton
 
 @Singleton
 class EventRepositoryImpl @Inject constructor(
-    private val apiService: LocalInteractionApiService
+    private val apiService: LocalInteractionApiService,
+    private val multipartFileHelper: MultipartFileHelper
 ) : EventRepository {
 
     override fun observeOpenEvents(
@@ -111,10 +114,7 @@ class EventRepositoryImpl @Inject constructor(
         volunteerQuota: Int,
         photoUrls: List<String>
     ): Result<Event> = runCatching {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        val dateString = dateFormat.format(Date(dateTimeMillis))
+        val dateString = formatIsoUtcDate(dateTimeMillis)
         val request = EventCreateDto(
             title = title,
             description = description,
@@ -127,11 +127,70 @@ class EventRepositoryImpl @Inject constructor(
             ),
             volunteerQuota = volunteerQuota
         )
-        apiService.createEvent(request).toDomain()
+        val createdDto = apiService.createEvent(request)
+        val parts = multipartFileHelper.createPartsFromUris("files", photoUrls)
+        val finalDto = if (parts.isNotEmpty()) {
+            runCatching {
+                apiService.uploadEventPhotos(createdDto.id, parts)
+            }.getOrDefault(createdDto)
+        } else {
+            createdDto
+        }
+        finalDto.toDomain()
+    }
+
+    override suspend fun updateEvent(
+        eventId: String,
+        title: String,
+        description: String,
+        categoryId: String,
+        dateTimeMillis: Long,
+        address: String,
+        location: GeoPoint,
+        volunteerQuota: Int,
+        photoUrls: List<String>
+    ): Result<Event> = runCatching {
+        val dateString = formatIsoUtcDate(dateTimeMillis)
+        val request = EventUpdateDto(
+            title = title,
+            description = description,
+            categoryId = categoryId.ifBlank { null },
+            eventDate = dateString,
+            location = GeoLocationDto(
+                address = address,
+                latitude = location.latitude,
+                longitude = location.longitude
+            ),
+            volunteerQuota = volunteerQuota
+        )
+        val updatedDto = apiService.updateEvent(eventId, request)
+        val parts = multipartFileHelper.createPartsFromUris("files", photoUrls)
+        val finalDto = if (parts.isNotEmpty()) {
+            runCatching {
+                apiService.uploadEventPhotos(eventId, parts)
+            }.getOrDefault(updatedDto)
+        } else {
+            updatedDto
+        }
+        finalDto.toDomain()
+    }
+
+    override suspend fun deleteEvent(eventId: String): Result<Unit> = runCatching {
+        val response = apiService.deleteEvent(eventId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException("Failed to delete event: ${response.code()}")
+        }
     }
 
     override suspend fun updateEventStatus(eventId: String, newStatus: EventStatus): Result<Event> = runCatching {
         val request = EventStatusUpdateDto(status = newStatus.apiValue)
         apiService.changeEventStatus(eventId, request).toDomain()
+    }
+
+    private fun formatIsoUtcDate(dateTimeMillis: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        return dateFormat.format(Date(dateTimeMillis))
     }
 }

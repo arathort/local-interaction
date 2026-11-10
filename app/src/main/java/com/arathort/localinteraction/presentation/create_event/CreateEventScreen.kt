@@ -1,11 +1,8 @@
 package com.arathort.localinteraction.presentation.create_event
 
-import android.graphics.ImageDecoder
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,7 +49,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -64,6 +60,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.Category
+import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 import com.google.android.gms.maps.model.CameraPosition
@@ -133,7 +130,13 @@ fun CreateEventScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.create_event_title)) },
+                title = {
+                    Text(
+                        text = stringResource(
+                            if (state.isEditMode) R.string.edit_event_title else R.string.create_event_title
+                        )
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClicked) {
                         Icon(
@@ -145,6 +148,21 @@ fun CreateEventScreen(
             )
         }
     ) { innerPadding ->
+        if (state.isLoadingEvent) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                    strokeWidth = Dimensions.progressIndicatorStrokeWidth
+                )
+            }
+            return@Scaffold
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -207,7 +225,7 @@ fun CreateEventScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         state.descriptionErrorResId?.let {
-                            Text(text = stringResource(it), color = MaterialTheme.colorScheme.error)
+                            Text(text = stringResource(it, state.description.length), color = MaterialTheme.colorScheme.error)
                         } ?: Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = stringResource(R.string.event_form_desc_counter_format, state.description.length),
@@ -370,7 +388,15 @@ fun CreateEventScreen(
                             strokeWidth = Dimensions.progressIndicatorStrokeWidth
                         )
                     } else {
-                        Text(text = stringResource(R.string.event_form_submit_moderation))
+                        Text(
+                            text = stringResource(
+                                if (state.isEditMode) {
+                                    R.string.event_form_save_changes
+                                } else {
+                                    R.string.event_form_submit_moderation
+                                }
+                            )
+                        )
                     }
                 }
             }
@@ -421,42 +447,17 @@ private fun GalleryPhotoThumbnail(
     onRemove: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val imageBitmap = remember(photoUri) {
-        runCatching {
-            val uri = Uri.parse(photoUri)
-            val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                decoder.setTargetSampleSize(2)
-            }.asImageBitmap()
-        }.getOrNull()
-    }
-
     Card(
         shape = RoundedCornerShape(Dimensions.cardCornerRadius),
         modifier = modifier.size(Dimensions.photoThumbnailSize)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (imageBitmap != null) {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_photo_library),
-                        contentDescription = null,
-                        modifier = Modifier.size(Dimensions.iconMedium),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            AppAsyncImage(
+                model = photoUri,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             IconButton(
                 onClick = onRemove,
                 modifier = Modifier

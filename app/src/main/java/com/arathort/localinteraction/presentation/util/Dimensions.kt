@@ -47,4 +47,7 @@ object Dimensions {
     val mapPreviewCardElevation = 6.dp
     val reviewCommentMinHeight = 120.dp
     val commentReplyIndent = 16.dp
+    val eventCardCoverHeight = 140.dp
+    val photoPreviewHeight = 320.dp
+    val avatarCameraBadgeSize = 28.dp
 }
