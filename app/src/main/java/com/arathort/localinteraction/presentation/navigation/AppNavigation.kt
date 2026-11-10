@@ -31,6 +31,8 @@ import com.arathort.localinteraction.presentation.manage_applications.ManageAppl
 import com.arathort.localinteraction.presentation.manage_applications.ManageApplicationsViewModel
 import com.arathort.localinteraction.presentation.profile.ProfileRoute
 import com.arathort.localinteraction.presentation.profile.ProfileViewModel
+import com.arathort.localinteraction.presentation.review.WriteReviewRoute
+import com.arathort.localinteraction.presentation.review.WriteReviewViewModel
 import com.arathort.localinteraction.presentation.util.Dimensions
 
 @Composable
@@ -80,6 +82,16 @@ fun AppNavigation(
                     },
                     onNavigateToProfile = { userId ->
                         backStack.add(AppDestination.Profile(userId))
+                    },
+                    onNavigateToWriteReview = { eventId, eventTitle, targetUserId, targetUserName ->
+                        backStack.add(
+                            AppDestination.WriteReview(
+                                eventId = eventId,
+                                eventTitle = eventTitle,
+                                targetUserId = targetUserId,
+                                targetUserName = targetUserName
+                            )
+                        )
                     }
                 )
             }
@@ -127,18 +139,33 @@ fun AppNavigation(
                     onBack = { backStack.removeLastOrNull() },
                     onNavigateToVolunteerProfile = { volunteerId ->
                         backStack.add(AppDestination.Profile(volunteerId))
+                    },
+                    onNavigateToWriteReview = { eventId, eventTitle, volunteerId, volunteerName ->
+                        backStack.add(
+                            AppDestination.WriteReview(
+                                eventId = eventId,
+                                eventTitle = eventTitle,
+                                targetUserId = volunteerId,
+                                targetUserName = volunteerName
+                            )
+                        )
                     }
                 )
             }
 
             entry<AppDestination.WriteReview> { key ->
-                DestinationPlaceholderScreen(
-                    title = stringResource(R.string.review_title),
-                    subtitle = stringResource(
-                        R.string.review_subtitle,
-                        key.eventTitle,
-                        key.targetUserName
-                    ),
+                val viewModel = hiltViewModel<WriteReviewViewModel, WriteReviewViewModel.Factory>(
+                    creationCallback = { factory ->
+                        factory.create(
+                            eventId = key.eventId,
+                            eventTitle = key.eventTitle,
+                            targetUserId = key.targetUserId,
+                            targetUserName = key.targetUserName
+                        )
+                    }
+                )
+                WriteReviewRoute(
+                    viewModel = viewModel,
                     onBack = { backStack.removeLastOrNull() }
                 )
             }

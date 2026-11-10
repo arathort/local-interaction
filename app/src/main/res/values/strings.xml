@@ -159,6 +159,20 @@
     <string name="review_rating_label">Оцінка (від 1 до 5 зірочок)</string>
     <string name="review_comment_hint">Поділіться враженнями від співпраці…</string>
     <string name="review_action_rate">Оцінити</string>
+    <string name="review_success">Відгук успішно надіслано</string>
+    <string name="review_success_with_new_rating">Відгук надіслано! Новий рейтинг: %1$.1f</string>
+    <string name="review_already_submitted_message">Ви вже оцінили співпрацю з цим користувачем у рамках даного заходу.</string>
+    <string name="review_cannot_review_message">Оцінювання можливе лише для заходів у статусі «В процесі» або «Виконано».</string>
+    <string name="review_target_role_format">Роль: %1$s</string>
+    <string name="review_action_rate_organizer">Оцінити організатора</string>
+    <string name="review_action_rate_volunteer">Оцінити волонтера</string>
+    <string name="review_char_counter">%1$d / %2$d</string>
+    <string name="review_star_cd">%1$d з 5 зірочок</string>
+    <string name="review_rating_1">1 — Дуже погано</string>
+    <string name="review_rating_2">2 — Погано</string>
+    <string name="review_rating_3">3 — Задовільно</string>
+    <string name="review_rating_4">4 — Добре</string>
+    <string name="review_rating_5">5 — Відмінно</string>
 
     <string name="admin_panel_title">Адміністративна панель</string>
     <string name="admin_tab_moderation">Модерація заходів</string>

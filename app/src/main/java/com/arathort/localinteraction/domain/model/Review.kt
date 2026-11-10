@@ -9,5 +9,6 @@ data class Review(
     val comment: String? = null,
     val createdAt: String,
     val targetUserId: String = "",
-    val eventTitle: String = ""
+    val eventTitle: String = "",
+    val newAverageRating: Double? = null
 )
