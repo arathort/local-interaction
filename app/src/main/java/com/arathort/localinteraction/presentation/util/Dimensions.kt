@@ -33,6 +33,7 @@ object Dimensions {
 
     val eventDetailsImageHeight = 220.dp
     val eventDetailsPhotoSize = 100.dp
+    val avatarSmall = 36.dp
     val avatarMedium = 48.dp
     val avatarLarge = 64.dp
     val avatarExtraLarge = 80.dp
@@ -45,4 +46,5 @@ object Dimensions {
     val fabElevation = 4.dp
     val mapPreviewCardElevation = 6.dp
     val reviewCommentMinHeight = 120.dp
+    val commentReplyIndent = 16.dp
 }

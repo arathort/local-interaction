@@ -72,7 +72,7 @@ class CreateEventViewModelTest {
         override fun observeCategories(): Flow<List<Category>> = flowOf(sampleCategories)
         override suspend fun getEventById(eventId: String) = Result.failure<Event>(UnsupportedOperationException())
         override fun observeCommentsForEvent(eventId: String) = flowOf(emptyList<Comment>())
-        override suspend fun addComment(eventId: String, text: String) = Result.failure<Comment>(UnsupportedOperationException())
+        override suspend fun addComment(eventId: String, text: String, replyToCommentId: String?) = Result.failure<Comment>(UnsupportedOperationException())
         override suspend fun createEvent(
             title: String,
             description: String,

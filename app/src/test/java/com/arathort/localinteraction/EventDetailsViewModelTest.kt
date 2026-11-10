@@ -13,6 +13,9 @@ import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
+import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
+import com.arathort.localinteraction.domain.usecase.GetEventCommentsUseCase
 import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
@@ -37,6 +40,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -61,12 +65,43 @@ class EventDetailsViewModelTest {
         organizer = OrganizerShortInfo(id = "user-organizer-1", fullName = "Тарас", rating = 4.8)
     )
 
+    private val initialComment = Comment(
+        id = "comment-1",
+        eventId = "event-1",
+        authorId = "user-organizer-1",
+        authorName = "Тарас",
+        authorRole = UserRole.ORGANIZER.apiValue,
+        text = "Чекаємо на всіх небайдужих!",
+        createdAt = "2026-10-30T12:00:00Z"
+    )
+
+    private val storedComments = mutableListOf(initialComment)
+
     private val fakeEventRepository = object : EventRepository {
         override fun observeOpenEvents(searchQuery: String, categoryIds: Set<String>): Flow<List<Event>> = emptyFlow()
         override fun observeCategories() = emptyFlow<List<com.arathort.localinteraction.domain.model.Category>>()
         override suspend fun getEventById(eventId: String): Result<Event> = Result.success(testEvent)
-        override fun observeCommentsForEvent(eventId: String): Flow<List<Comment>> = flowOf(emptyList())
-        override suspend fun addComment(eventId: String, text: String): Result<Comment> = Result.failure(UnsupportedOperationException())
+        override fun observeCommentsForEvent(eventId: String): Flow<List<Comment>> = flowOf(storedComments.toList())
+        override suspend fun getEventComments(eventId: String, skip: Int, limit: Int): Result<List<Comment>> = Result.success(storedComments.toList())
+        override suspend fun addComment(eventId: String, text: String, replyToCommentId: String?): Result<Comment> {
+            val user = currentUserFlow.value
+            val created = Comment(
+                id = "comment-${storedComments.size + 1}",
+                eventId = eventId,
+                authorId = user.id,
+                authorName = user.fullName.orEmpty().ifBlank { "Волонтер" },
+                authorRole = user.role.apiValue,
+                text = text,
+                replyToCommentId = replyToCommentId,
+                createdAt = "2026-10-31T08:00:00Z"
+            )
+            storedComments.add(created)
+            return Result.success(created)
+        }
+        override suspend fun deleteComment(commentId: String): Result<Unit> {
+            storedComments.removeAll { it.id == commentId }
+            return Result.success(Unit)
+        }
         override suspend fun createEvent(
             title: String,
             description: String,
@@ -126,13 +161,18 @@ class EventDetailsViewModelTest {
         getMyApplicationsUseCase = GetMyApplicationsUseCase(fakeApplicationRepository),
         submitApplicationUseCase = SubmitApplicationUseCase(fakeApplicationRepository),
         withdrawApplicationUseCase = WithdrawApplicationUseCase(fakeApplicationRepository),
-        updateEventStatusUseCase = UpdateEventStatusUseCase(fakeEventRepository)
+        updateEventStatusUseCase = UpdateEventStatusUseCase(fakeEventRepository),
+        getEventCommentsUseCase = GetEventCommentsUseCase(fakeEventRepository),
+        addEventCommentUseCase = AddEventCommentUseCase(fakeEventRepository),
+        deleteEventCommentUseCase = DeleteEventCommentUseCase(fakeEventRepository)
     )
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         currentUserFlow.value = User(id = "user-guest", role = UserRole.GUEST)
+        storedComments.clear()
+        storedComments.add(initialComment)
     }
 
     @After
@@ -141,7 +181,7 @@ class EventDetailsViewModelTest {
     }
 
     @Test
-    fun `initial load fetches event details and sets loading false`() = runTest {
+    fun `initial load fetches event details and comments and sets loading false`() = runTest {
         val viewModel = createViewModel()
         val state = viewModel.uiState.value
 
@@ -149,6 +189,8 @@ class EventDetailsViewModelTest {
         assertNotNull(state.event)
         assertEquals("event-1", state.event?.id)
         assertEquals("Прибирання парку", state.event?.title)
+        assertEquals(1, state.comments.size)
+        assertEquals("comment-1", state.comments.first().id)
     }
 
     @Test
@@ -199,5 +241,74 @@ class EventDetailsViewModelTest {
 
         val effect = viewModel.effect.first()
         assertEquals(EventDetailsEffect.NavigateBack, effect)
+    }
+
+    @Test
+    fun `Authenticated user submitting comment adds it to comments and clears input`() = runTest {
+        currentUserFlow.value = User(id = "user-volunteer-1", fullName = "Олена", role = UserRole.VOLUNTEER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.CommentTextChanged("Чи потрібно брати власні рукавички?"))
+        viewModel.onEvent(EventDetailsEvent.SubmitCommentClicked)
+
+        val state = viewModel.uiState.value
+        assertEquals("", state.commentText)
+        assertNull(state.commentErrorResId)
+        assertEquals(2, state.comments.size)
+        assertEquals("Чи потрібно брати власні рукавички?", state.comments.last().text)
+        assertNull(state.comments.last().replyToCommentId)
+    }
+
+    @Test
+    fun `Replying to comment attaches replyToCommentId and clears replyingToComment after submit`() = runTest {
+        currentUserFlow.value = User(id = "user-organizer-1", fullName = "Тарас", role = UserRole.ORGANIZER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.ReplyToCommentClicked(initialComment))
+        assertEquals(initialComment, viewModel.uiState.value.replyingToComment)
+
+        viewModel.onEvent(EventDetailsEvent.CommentTextChanged("Рукавички видамо на місці!"))
+        viewModel.onEvent(EventDetailsEvent.SubmitCommentClicked)
+
+        val state = viewModel.uiState.value
+        assertNull(state.replyingToComment)
+        assertEquals(2, state.comments.size)
+        assertEquals("comment-1", state.comments.last().replyToCommentId)
+    }
+
+    @Test
+    fun `Submitting empty comment sets commentErrorResId`() = runTest {
+        currentUserFlow.value = User(id = "user-volunteer-1", role = UserRole.VOLUNTEER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.CommentTextChanged("   "))
+        viewModel.onEvent(EventDetailsEvent.SubmitCommentClicked)
+
+        assertEquals(R.string.error_comment_empty, viewModel.uiState.value.commentErrorResId)
+        assertEquals(1, viewModel.uiState.value.comments.size)
+    }
+
+    @Test
+    fun `Guest clicking ReplyToCommentClicked emits NavigateToAuth`() = runTest {
+        val viewModel = createViewModel()
+        viewModel.onEvent(EventDetailsEvent.ReplyToCommentClicked(initialComment))
+
+        val effect = viewModel.effect.first()
+        assertEquals(EventDetailsEffect.NavigateToAuth, effect)
+    }
+
+    @Test
+    fun `Deleting comment removes it from comments list`() = runTest {
+        currentUserFlow.value = User(id = "user-organizer-1", role = UserRole.ORGANIZER)
+        val viewModel = createViewModel()
+
+        viewModel.onEvent(EventDetailsEvent.DeleteCommentClicked("comment-1"))
+        assertEquals("comment-1", viewModel.uiState.value.deletingCommentId)
+
+        viewModel.onEvent(EventDetailsEvent.ConfirmDeleteComment)
+
+        val state = viewModel.uiState.value
+        assertNull(state.deletingCommentId)
+        assertTrue(state.comments.isEmpty())
     }
 }

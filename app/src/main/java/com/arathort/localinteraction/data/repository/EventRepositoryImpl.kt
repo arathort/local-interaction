@@ -78,9 +78,27 @@ class EventRepositoryImpl @Inject constructor(
         emit(comments)
     }
 
-    override suspend fun addComment(eventId: String, text: String): Result<Comment> = runCatching {
-        val request = CommentCreateDto(text = text.trim())
+    override suspend fun getEventComments(eventId: String, skip: Int, limit: Int): Result<List<Comment>> = runCatching {
+        apiService.getEventComments(eventId = eventId, skip = skip, limit = limit).map { it.toDomain() }
+    }
+
+    override suspend fun addComment(
+        eventId: String,
+        text: String,
+        replyToCommentId: String?
+    ): Result<Comment> = runCatching {
+        val request = CommentCreateDto(
+            text = text.trim(),
+            replyToCommentId = replyToCommentId
+        )
         apiService.createEventComment(eventId, request).toDomain()
+    }
+
+    override suspend fun deleteComment(commentId: String): Result<Unit> = runCatching {
+        val response = apiService.deleteComment(commentId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException("Failed to delete comment: ${response.code()}")
+        }
     }
 
     override suspend fun createEvent(
