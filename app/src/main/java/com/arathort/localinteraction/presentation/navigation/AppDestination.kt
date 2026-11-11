@@ -10,6 +10,9 @@ sealed interface AppDestination : NavKey {
     data object Home : AppDestination
 
     @Serializable
+    data object Notifications : AppDestination
+
+    @Serializable
     data class EventDetails(val eventId: String) : AppDestination
 
     @Serializable

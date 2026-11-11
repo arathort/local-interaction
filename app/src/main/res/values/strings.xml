@@ -346,4 +346,30 @@
     <string name="auth_oauth_token_label">OAuth токен провайдера</string>
     <string name="auth_oauth_continue_button">Продовжити</string>
     <string name="error_oauth_token_required">Вкажіть OAuth токен для авторизації</string>
+
+    <string name="nav_home">Головна</string>
+    <string name="nav_notifications">Сповіщення</string>
+    <string name="nav_profile">Профіль</string>
+    <string name="notifications_title">Сповіщення</string>
+    <string name="notifications_mark_all_read">Позначити всі як прочитані</string>
+    <string name="notifications_filter_all">Всі (%1$d)</string>
+    <string name="notifications_filter_unread">Непрочитані (%1$d)</string>
+    <string name="notifications_empty_title">Поки що немає сповіщень</string>
+    <string name="notifications_empty_subtitle">Тут з\'являтимуться оновлення ваших заходів, статусів заявок та коментарів</string>
+    <string name="notifications_empty_unread">Усі сповіщення прочитані</string>
+    <string name="notifications_guest_title">Сповіщення доступні для учасників</string>
+    <string name="notifications_guest_subtitle">Увійдіть до свого облікового запису, щоб слідкувати за статусами заявок та подіями спільноти</string>
+    <string name="notifications_mark_read">Позначити прочитаним</string>
+    <string name="notifications_all_read_success">Усі сповіщення позначено як прочитані</string>
+    <string name="notifications_action_details">Детальніше</string>
+    <string name="notifications_unread_badge_desc">%1$d нових сповіщень</string>
+
+    <string name="notification_type_event_moderation">Модерація заходу</string>
+    <string name="notification_type_new_application">Нова заявка</string>
+    <string name="notification_type_application_status">Статус заявки</string>
+    <string name="notification_type_application_withdrawal">Відкликання заявки</string>
+    <string name="notification_type_event_status_change">Зміна статусу заходу</string>
+    <string name="notification_type_new_review">Новий відгук</string>
+    <string name="notification_type_new_comment">Новий коментар</string>
+    <string name="notification_type_account_security">Безпека акаунту</string>
 </resources>

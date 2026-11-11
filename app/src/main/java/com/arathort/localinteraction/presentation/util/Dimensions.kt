@@ -54,4 +54,8 @@ object Dimensions {
     val authHeroIconSize = 32.dp
     val roleCardBorderSelected = 2.dp
     val roleCardBorderDefault = 1.dp
+    val notificationUnreadDotSize = 8.dp
+    val notificationIconContainerSize = 40.dp
+    val notificationIconSize = 20.dp
+    val notificationItemPadding = 12.dp
 }
