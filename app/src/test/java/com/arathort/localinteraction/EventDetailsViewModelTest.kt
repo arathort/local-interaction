@@ -8,6 +8,7 @@ import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventApplicationsManage
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
+import com.arathort.localinteraction.domain.model.OrganizerContactsInfo
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
@@ -123,12 +124,14 @@ class EventDetailsViewModelTest {
             Result.success(testEvent.copy(status = newStatus))
     }
 
+    private var myApplicationsList: List<VolunteerApplication> = emptyList()
+
     private val fakeApplicationRepository = object : ApplicationRepository {
         override fun observeApplicationsForEvent(eventId: String) = emptyFlow<List<VolunteerApplication>>()
         override fun observeEventApplicationsManage(eventId: String) = emptyFlow<EventApplicationsManage>()
         override suspend fun getEventApplicationsManage(eventId: String): Result<EventApplicationsManage> = Result.failure(UnsupportedOperationException())
         override fun observeMyApplications() = emptyFlow<List<VolunteerApplication>>()
-        override suspend fun getMyApplications(): Result<List<VolunteerApplication>> = Result.success(emptyList())
+        override suspend fun getMyApplications(): Result<List<VolunteerApplication>> = Result.success(myApplicationsList)
         override suspend fun submitApplication(eventId: String, motivationLetter: String, agreedToShareContacts: Boolean): Result<VolunteerApplication> =
             Result.success(
                 VolunteerApplication(
@@ -203,6 +206,7 @@ class EventDetailsViewModelTest {
         currentUserFlow.value = User(id = "user-guest", role = UserRole.GUEST)
         storedComments.clear()
         storedComments.add(initialComment)
+        myApplicationsList = emptyList()
     }
 
     @After
@@ -406,5 +410,33 @@ class EventDetailsViewModelTest {
         assertEquals("comment-1", reportEffect?.targetId)
         assertEquals("Тарас", reportEffect?.targetTitle)
         effectJob.cancel()
+    }
+
+    @Test
+    fun `Approved application loads organizer contacts into state`() = runTest {
+        myApplicationsList = listOf(
+            VolunteerApplication(
+                id = "app-approved",
+                eventId = "event-1",
+                volunteerId = "user-volunteer-1",
+                status = ApplicationStatus.APPROVED,
+                organizerContacts = OrganizerContactsInfo(
+                    fullName = "Олександр Організатор",
+                    email = "organizer@example.com",
+                    phone = "+380501234567"
+                ),
+                createdAt = "2026-10-31T10:00:00Z"
+            )
+        )
+        currentUserFlow.value = User(id = "user-volunteer-1", role = UserRole.VOLUNTEER)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val app = viewModel.uiState.value.userApplication
+        assertNotNull(app)
+        assertEquals(ApplicationStatus.APPROVED, app?.status)
+        assertNotNull(app?.organizerContacts)
+        assertEquals("organizer@example.com", app?.organizerContacts?.email)
+        assertEquals("+380501234567", app?.organizerContacts?.phone)
     }
 }

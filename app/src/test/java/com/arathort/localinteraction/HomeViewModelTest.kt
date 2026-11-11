@@ -10,9 +10,9 @@ import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
+import com.arathort.localinteraction.domain.usecase.GetOpenEventsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCategoriesUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
-import com.arathort.localinteraction.domain.usecase.ObserveOpenEventsUseCase
 import com.arathort.localinteraction.presentation.home.HomeEffect
 import com.arathort.localinteraction.presentation.home.HomeEvent
 import com.arathort.localinteraction.presentation.home.HomeViewModel
@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -88,6 +90,19 @@ class HomeViewModelTest {
                     }
                 }
 
+            override suspend fun getOpenEvents(
+                searchQuery: String,
+                categoryIds: Set<String>,
+                skip: Int,
+                limit: Int
+            ): Result<List<Event>> {
+                val filtered = sampleEvents.filter { event ->
+                    (categoryIds.isEmpty() || event.categoryId in categoryIds) &&
+                        (searchQuery.isBlank() || event.title.contains(searchQuery, ignoreCase = true))
+                }
+                return Result.success(filtered.drop(skip).take(limit))
+            }
+
             override fun observeCategories(): Flow<List<Category>> = flowOf(sampleCategories)
             override suspend fun getEventById(eventId: String): Result<Event> =
                 sampleEvents.find { it.id == eventId }?.let { Result.success(it) } ?: Result.failure(NoSuchElementException())
@@ -117,7 +132,7 @@ class HomeViewModelTest {
         }
 
         viewModel = HomeViewModel(
-            observeOpenEventsUseCase = ObserveOpenEventsUseCase(fakeEventRepository),
+            getOpenEventsUseCase = GetOpenEventsUseCase(fakeEventRepository),
             observeCategoriesUseCase = ObserveCategoriesUseCase(fakeEventRepository),
             observeCurrentUserUseCase = ObserveCurrentUserUseCase(fakeAuthRepository)
         )
@@ -133,6 +148,7 @@ class HomeViewModelTest {
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.state.collect {}
         }
+        advanceUntilIdle()
 
         val currentState = viewModel.state.value
         assertFalse(currentState.isLoading)
@@ -148,12 +164,15 @@ class HomeViewModelTest {
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.state.collect {}
         }
+        advanceUntilIdle()
 
         viewModel.onEvent(HomeEvent.CategoryToggled("cat-animals"))
+        advanceUntilIdle()
         assertEquals(setOf("cat-animals"), viewModel.state.value.selectedCategoryIds)
         assertEquals(1, viewModel.state.value.events.size)
 
         viewModel.onEvent(HomeEvent.ClearFilters)
+        advanceUntilIdle()
         assertTrue(viewModel.state.value.selectedCategoryIds.isEmpty())
         assertEquals(2, viewModel.state.value.events.size)
 
@@ -165,11 +184,14 @@ class HomeViewModelTest {
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.state.collect {}
         }
+        advanceUntilIdle()
 
         viewModel.onEvent(HomeEvent.ViewModeChanged(true))
+        advanceUntilIdle()
         assertTrue(viewModel.state.value.isMapView)
 
         viewModel.onEvent(HomeEvent.EventClicked("event-1"))
+        advanceUntilIdle()
         val effect = viewModel.effects.first()
         assertEquals(HomeEffect.NavigateToEventDetails("event-1"), effect)
 
@@ -181,17 +203,21 @@ class HomeViewModelTest {
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.state.collect {}
         }
+        advanceUntilIdle()
 
         viewModel.onEvent(HomeEvent.ViewModeChanged(true))
+        advanceUntilIdle()
         assertNull(viewModel.state.value.selectedMapEventId)
         assertNull(viewModel.state.value.selectedMapEvent)
 
         viewModel.onEvent(HomeEvent.MapMarkerClicked("event-1"))
+        advanceUntilIdle()
         assertEquals("event-1", viewModel.state.value.selectedMapEventId)
         assertNotNull(viewModel.state.value.selectedMapEvent)
         assertEquals("Прибирання парку", viewModel.state.value.selectedMapEvent?.title)
 
         viewModel.onEvent(HomeEvent.MapDismissPreviewClicked)
+        advanceUntilIdle()
         assertNull(viewModel.state.value.selectedMapEventId)
         assertNull(viewModel.state.value.selectedMapEvent)
 
@@ -203,14 +229,40 @@ class HomeViewModelTest {
         val collectJob = backgroundScope.launch(testDispatcher) {
             viewModel.state.collect {}
         }
+        advanceUntilIdle()
 
         viewModel.onEvent(HomeEvent.ViewModeChanged(true))
+        advanceUntilIdle()
         viewModel.onEvent(HomeEvent.MapMarkerClicked("event-2"))
+        advanceUntilIdle()
         assertEquals("event-2", viewModel.state.value.selectedMapEventId)
 
         viewModel.onEvent(HomeEvent.ViewModeChanged(false))
+        advanceUntilIdle()
         assertFalse(viewModel.state.value.isMapView)
         assertNull(viewModel.state.value.selectedMapEventId)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `LoadMoreEvents and Refresh update pagination state`() = runTest {
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+        advanceUntilIdle()
+
+        viewModel.onEvent(HomeEvent.LoadMoreEvents)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.isPaginationLoading)
+        assertEquals(2, viewModel.state.value.events.size)
+
+        viewModel.onEvent(HomeEvent.Refresh)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.isLoading)
+        assertEquals(2, viewModel.state.value.events.size)
 
         collectJob.cancel()
     }

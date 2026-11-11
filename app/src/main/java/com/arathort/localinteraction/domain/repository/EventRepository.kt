@@ -12,6 +12,12 @@ interface EventRepository {
         searchQuery: String = "",
         categoryIds: Set<String> = emptySet()
     ): Flow<List<Event>>
+    suspend fun getOpenEvents(
+        searchQuery: String = "",
+        categoryIds: Set<String> = emptySet(),
+        skip: Int = 0,
+        limit: Int = 20
+    ): Result<List<Event>> = Result.success(emptyList())
     fun observeCategories(): Flow<List<Category>>
     suspend fun getEventById(eventId: String): Result<Event>
     fun observeCommentsForEvent(eventId: String): Flow<List<Comment>>

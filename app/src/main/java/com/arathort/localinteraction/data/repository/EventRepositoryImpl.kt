@@ -53,6 +53,32 @@ class EventRepositoryImpl @Inject constructor(
         emit(events)
     }
 
+    override suspend fun getOpenEvents(
+        searchQuery: String,
+        categoryIds: Set<String>,
+        skip: Int,
+        limit: Int
+    ): Result<List<Event>> = runCatching {
+        val categoriesParam = if (categoryIds.isEmpty()) null else categoryIds.toList()
+        val searchParam = searchQuery.trim().ifBlank { null }
+        val categoryMap = runCatching {
+            apiService.getCategories().associate { it.id to it.name }
+        }.getOrDefault(emptyMap())
+        apiService.getEvents(
+            search = searchParam,
+            categories = categoriesParam,
+            skip = skip,
+            limit = limit
+        ).map { dto ->
+            val domain = dto.toDomain()
+            if (domain.categoryName.isBlank() && domain.categoryId != null) {
+                domain.copy(categoryName = categoryMap[domain.categoryId].orEmpty())
+            } else {
+                domain
+            }
+        }.filter { it.status == EventStatus.OPEN }
+    }
+
     override fun observeCategories(): Flow<List<Category>> = flow {
         val categories = runCatching {
             apiService.getCategories()

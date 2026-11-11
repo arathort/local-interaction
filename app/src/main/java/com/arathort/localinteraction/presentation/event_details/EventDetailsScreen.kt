@@ -1,5 +1,7 @@
 package com.arathort.localinteraction.presentation.event_details
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -48,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -63,12 +67,20 @@ import com.arathort.localinteraction.domain.model.Comment
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
+import com.arathort.localinteraction.domain.model.OrganizerContactsInfo
 import com.arathort.localinteraction.domain.model.OrganizerShortInfo
 import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberUpdatedMarkerState
 
 @Composable
 fun EventDetailsRoute(
@@ -355,22 +367,10 @@ private fun EventDetailsContent(
 
         Spacer(modifier = Modifier.height(Dimensions.spacingSmall))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingExtraSmall)
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_location),
-                contentDescription = null,
-                modifier = Modifier.size(Dimensions.iconSmall),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = event.location.address,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        EventLocationCard(
+            location = event.location,
+            eventTitle = event.title
+        )
 
         Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
 
@@ -385,6 +385,13 @@ private fun EventDetailsContent(
             organizer = event.organizer,
             onClick = onOrganizerClicked
         )
+
+        if (state.userApplication?.status == ApplicationStatus.APPROVED && state.userApplication.organizerContacts != null) {
+            Spacer(modifier = Modifier.height(Dimensions.spacingMedium))
+            ApprovedOrganizerContactsCard(
+                contacts = state.userApplication.organizerContacts
+            )
+        }
 
         Spacer(modifier = Modifier.height(Dimensions.spacingLarge))
 
@@ -1046,6 +1053,217 @@ private fun OrganizerCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventLocationCard(
+    location: GeoPoint,
+    eventTitle: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val lat = location.latitude
+    val lng = location.longitude
+    val hasCoordinates = lat != null && lng != null
+
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.paddingMedium),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_location),
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSmall),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = location.address,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (hasCoordinates) {
+                val cameraPositionState = rememberCameraPositionState {
+                    position = CameraPosition.fromLatLngZoom(LatLng(lat, lng), 15f)
+                }
+                val markerState = rememberUpdatedMarkerState(position = LatLng(lat, lng))
+                val uiSettings = remember {
+                    MapUiSettings(
+                        scrollGesturesEnabled = false,
+                        zoomGesturesEnabled = false,
+                        tiltGesturesEnabled = false,
+                        rotationGesturesEnabled = false,
+                        mapToolbarEnabled = false
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(Dimensions.eventMiniMapHeight)
+                        .clip(RoundedCornerShape(Dimensions.cardCornerRadius))
+                ) {
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = uiSettings
+                    ) {
+                        Marker(
+                            state = markerState,
+                            title = eventTitle
+                        )
+                    }
+                }
+            }
+
+            OutlinedButton(
+                onClick = {
+                    val uri = if (hasCoordinates) {
+                        Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(eventTitle)})")
+                    } else {
+                        Uri.parse("geo:0,0?q=${Uri.encode(location.address)}")
+                    }
+                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                    runCatching {
+                        context.startActivity(intent)
+                    }.onFailure {
+                        val fallbackUri = if (hasCoordinates) {
+                            Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                        } else {
+                            Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encode(location.address)}")
+                        }
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, fallbackUri))
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_location),
+                    contentDescription = null,
+                    modifier = Modifier.size(Dimensions.iconSmall)
+                )
+                Spacer(modifier = Modifier.width(Dimensions.spacingSmall))
+                Text(text = stringResource(R.string.event_details_open_in_maps))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApprovedOrganizerContactsCard(
+    contacts: OrganizerContactsInfo,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+        ),
+        shape = RoundedCornerShape(Dimensions.cardCornerRadius)
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.paddingMedium),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+        ) {
+            Text(
+                text = stringResource(R.string.event_details_organizer_contacts_approved_badge),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Text(
+                text = stringResource(R.string.event_details_organizer_contacts_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalDivider()
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_email),
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimensions.organizerContactActionIconSize),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = contacts.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        val emailIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${contacts.email}"))
+                        runCatching { context.startActivity(emailIntent) }
+                    }
+                ) {
+                    Text(text = stringResource(R.string.event_details_email_action))
+                }
+            }
+
+            if (!contacts.phone.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.spacingSmall)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_phone),
+                            contentDescription = null,
+                            modifier = Modifier.size(Dimensions.organizerContactActionIconSize),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = contacts.phone,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contacts.phone}"))
+                            runCatching { context.startActivity(dialIntent) }
+                        }
+                    ) {
+                        Text(text = stringResource(R.string.event_details_call_action))
+                    }
                 }
             }
         }

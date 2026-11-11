@@ -12,4 +12,6 @@ sealed interface HomeEvent {
     data object NavigateToProfileClicked : HomeEvent
     data object NavigateToCreateEventClicked : HomeEvent
     data object NavigateToAdminClicked : HomeEvent
+    data object LoadMoreEvents : HomeEvent
+    data object Refresh : HomeEvent
 }

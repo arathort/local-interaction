@@ -21,11 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -44,6 +46,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -65,6 +68,7 @@ import com.arathort.localinteraction.domain.model.User
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.presentation.components.AppAsyncImage
 import com.arathort.localinteraction.presentation.util.Dimensions
+import com.arathort.localinteraction.presentation.util.LocationUtils
 import com.arathort.localinteraction.ui.theme.LocalInteractionTheme
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -242,7 +246,23 @@ fun HomeScreen(
                         )
                     }
                 } else {
+                    val listState = rememberLazyListState()
+                    val shouldLoadMore by remember {
+                        derivedStateOf {
+                            val totalItems = listState.layoutInfo.totalItemsCount
+                            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                            totalItems > 0 && lastVisible >= totalItems - 2
+                        }
+                    }
+
+                    LaunchedEffect(shouldLoadMore) {
+                        if (shouldLoadMore && !state.isPaginationLoading && state.canLoadMore) {
+                            onEvent(HomeEvent.LoadMoreEvents)
+                        }
+                    }
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
@@ -254,6 +274,22 @@ fun HomeScreen(
                                 event = event,
                                 onClick = { onEvent(HomeEvent.EventClicked(event.id)) }
                             )
+                        }
+
+                        if (state.isPaginationLoading) {
+                            item(key = "pagination_loading") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(Dimensions.paddingMedium),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(Dimensions.progressIndicatorSize),
+                                        strokeWidth = Dimensions.progressIndicatorStrokeWidth
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -307,6 +343,15 @@ fun EventSummaryCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
+            val distanceText = remember(event.location.latitude, event.location.longitude) {
+                val lat = event.location.latitude
+                val lng = event.location.longitude
+                if (lat != null && lng != null) {
+                    val meters = LocationUtils.calculateDistanceMeters(50.4501, 30.5234, lat, lng)
+                    LocationUtils.formatDistance(meters)
+                } else null
+            }
+
             Spacer(modifier = Modifier.height(Dimensions.spacingExtraSmall))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -319,7 +364,7 @@ fun EventSummaryCard(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = event.location.address,
+                    text = if (distanceText != null) "${event.location.address} • $distanceText" else event.location.address,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -393,4 +393,17 @@
     <string name="complaint_submitted_success">Скаргу успішно надіслано на розгляд модератору</string>
     <string name="error_complaint_category_required">Оберіть категорію порушення</string>
     <string name="error_complaint_description_too_short">Опис порушення має містити щонайменше 10 символів</string>
+
+    <string name="event_details_organizer_contacts_title">Контакти організатора</string>
+    <string name="event_details_organizer_contacts_subtitle">Вашу заявку схвалено! Зв\'яжіться з організатором для узгодження деталей.</string>
+    <string name="event_details_organizer_contacts_approved_badge">Заявку схвалено • Контакти відкрито</string>
+    <string name="event_details_organizer_phone">Телефон: %1$s</string>
+    <string name="event_details_organizer_email">Email: %1$s</string>
+    <string name="event_details_call_action">Зателефонувати</string>
+    <string name="event_details_email_action">Написати email</string>
+    <string name="event_details_open_in_maps">Відкрити в Google Maps</string>
+    <string name="event_details_map_title">Місце проведення на карті</string>
+    <string name="home_loading_more">Завантаження ще заходів…</string>
+    <string name="event_distance_meters">%1$d м</string>
+    <string name="event_distance_km">%1$.1f км</string>
 </resources>
