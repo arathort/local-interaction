@@ -4,12 +4,14 @@ import com.arathort.localinteraction.data.repository.AdminRepositoryImpl
 import com.arathort.localinteraction.data.repository.ApplicationRepositoryImpl
 import com.arathort.localinteraction.data.repository.AuthRepositoryImpl
 import com.arathort.localinteraction.data.repository.EventRepositoryImpl
+import com.arathort.localinteraction.data.repository.NotificationRepositoryImpl
 import com.arathort.localinteraction.data.repository.ProfileRepositoryImpl
 import com.arathort.localinteraction.data.repository.ReviewRepositoryImpl
 import com.arathort.localinteraction.domain.repository.AdminRepository
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import com.arathort.localinteraction.domain.repository.AuthRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
+import com.arathort.localinteraction.domain.repository.NotificationRepository
 import com.arathort.localinteraction.domain.repository.ProfileRepository
 import com.arathort.localinteraction.domain.repository.ReviewRepository
 import dagger.Binds
@@ -45,4 +47,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAdminRepository(impl: AdminRepositoryImpl): AdminRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
 }
