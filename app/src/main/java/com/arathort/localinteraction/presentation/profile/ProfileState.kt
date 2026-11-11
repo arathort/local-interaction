@@ -27,5 +27,7 @@ data class ProfileState(
     val isLogoutDialogVisible: Boolean = false,
     val withdrawConfirmationApplicationId: String? = null,
     val isWithdrawing: Boolean = false,
+    val showReportDialog: Boolean = false,
+    val isSubmittingReport: Boolean = false,
     @param:StringRes val errorMessageResId: Int? = null
 )

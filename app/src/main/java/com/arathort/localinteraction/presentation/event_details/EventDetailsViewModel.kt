@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.Comment
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
 import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
@@ -13,6 +14,7 @@ import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.SubmitApplicationUseCase
+import com.arathort.localinteraction.domain.usecase.SubmitComplaintUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateEventStatusUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
 import dagger.assisted.Assisted
@@ -39,7 +41,8 @@ class EventDetailsViewModel @AssistedInject constructor(
     private val getEventCommentsUseCase: GetEventCommentsUseCase,
     private val addEventCommentUseCase: AddEventCommentUseCase,
     private val deleteEventCommentUseCase: DeleteEventCommentUseCase,
-    private val deleteEventUseCase: DeleteEventUseCase
+    private val deleteEventUseCase: DeleteEventUseCase,
+    private val submitComplaintUseCase: SubmitComplaintUseCase
 ) : ViewModel() {
 
     @AssistedFactory
@@ -135,6 +138,43 @@ class EventDetailsViewModel @AssistedInject constructor(
             EventDetailsEvent.DismissPhotoPreview -> {
                 _uiState.update { it.copy(selectedPhotoUrlForPreview = null) }
             }
+            EventDetailsEvent.ReportEventClicked -> {
+                val event = _uiState.value.event ?: return
+                viewModelScope.launch {
+                    _effect.send(
+                        EventDetailsEffect.NavigateToReport(
+                            targetType = ComplaintTargetType.EVENT.apiValue,
+                            targetId = event.id,
+                            targetTitle = event.title
+                        )
+                    )
+                }
+            }
+            is EventDetailsEvent.ReportCommentClicked -> {
+                viewModelScope.launch {
+                    _effect.send(
+                        EventDetailsEffect.NavigateToReport(
+                            targetType = ComplaintTargetType.COMMENT.apiValue,
+                            targetId = event.commentId,
+                            targetTitle = event.authorName
+                        )
+                    )
+                }
+            }
+            EventDetailsEvent.DismissReportDialog -> {
+                _uiState.update {
+                    it.copy(
+                        showReportDialog = false,
+                        reportTargetType = null,
+                        reportTargetId = null,
+                        reportTargetTitle = "",
+                        isSubmittingReport = false
+                    )
+                }
+            }
+            is EventDetailsEvent.SubmitReport -> {
+                handleSubmitReport(event.violationCategory, event.description)
+            }
             EventDetailsEvent.BackClicked -> {
                 viewModelScope.launch {
                     _effect.send(EventDetailsEffect.NavigateBack)
@@ -161,6 +201,39 @@ class EventDetailsViewModel @AssistedInject constructor(
                         _effect.send(EventDetailsEffect.ShowSnackbar(R.string.error_network))
                     }
                 }
+        }
+    }
+
+    private fun handleSubmitReport(violationCategory: String, description: String) {
+        val targetType = _uiState.value.reportTargetType ?: return
+        val targetId = _uiState.value.reportTargetId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingReport = true) }
+            submitComplaintUseCase(
+                targetType = targetType,
+                targetId = targetId,
+                violationCategory = violationCategory,
+                description = description
+            ).onSuccess {
+                _uiState.update {
+                    it.copy(
+                        showReportDialog = false,
+                        reportTargetType = null,
+                        reportTargetId = null,
+                        reportTargetTitle = "",
+                        isSubmittingReport = false
+                    )
+                }
+                _effect.send(EventDetailsEffect.ShowSnackbar(R.string.complaint_submitted_success))
+            }.onFailure { error ->
+                _uiState.update { it.copy(isSubmittingReport = false) }
+                val msg = error.message.orEmpty()
+                if (msg.isNotBlank()) {
+                    _effect.send(EventDetailsEffect.ShowSnackbarText(msg))
+                } else {
+                    _effect.send(EventDetailsEffect.ShowSnackbar(R.string.error_unknown))
+                }
+            }
         }
     }
 

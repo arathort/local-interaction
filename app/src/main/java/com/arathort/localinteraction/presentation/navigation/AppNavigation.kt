@@ -36,6 +36,8 @@ import com.arathort.localinteraction.presentation.manage_applications.ManageAppl
 import com.arathort.localinteraction.presentation.notifications.NotificationsRoute
 import com.arathort.localinteraction.presentation.profile.ProfileRoute
 import com.arathort.localinteraction.presentation.profile.ProfileViewModel
+import com.arathort.localinteraction.presentation.report.ReportRoute
+import com.arathort.localinteraction.presentation.report.ReportViewModel
 import com.arathort.localinteraction.presentation.review.WriteReviewRoute
 import com.arathort.localinteraction.presentation.review.WriteReviewViewModel
 
@@ -207,6 +209,15 @@ fun AppNavigation(
                                     targetUserName = targetUserName
                                 )
                             )
+                        },
+                        onNavigateToReport = { targetType, targetId, targetTitle ->
+                            backStack.add(
+                                AppDestination.Report(
+                                    targetType = targetType,
+                                    targetId = targetId,
+                                    targetTitle = targetTitle
+                                )
+                            )
                         }
                     )
                 }
@@ -232,6 +243,15 @@ fun AppNavigation(
                         },
                         onNavigateToAdminPanel = {
                             backStack.add(AppDestination.AdminPanel)
+                        },
+                        onNavigateToReport = { targetType, targetId, targetTitle ->
+                            backStack.add(
+                                AppDestination.Report(
+                                    targetType = targetType,
+                                    targetId = targetId,
+                                    targetTitle = targetTitle
+                                )
+                            )
                         }
                     )
                 }
@@ -295,6 +315,22 @@ fun AppNavigation(
                         onNavigateToProfile = { userId ->
                             backStack.add(AppDestination.Profile(userId))
                         }
+                    )
+                }
+
+                entry<AppDestination.Report> { key ->
+                    val viewModel = hiltViewModel<ReportViewModel, ReportViewModel.Factory>(
+                        creationCallback = { factory ->
+                            factory.create(
+                                targetType = key.targetType,
+                                targetId = key.targetId,
+                                targetTitle = key.targetTitle
+                            )
+                        }
+                    )
+                    ReportRoute(
+                        viewModel = viewModel,
+                        onBack = { backStack.removeLastOrNull() }
                     )
                 }
             }

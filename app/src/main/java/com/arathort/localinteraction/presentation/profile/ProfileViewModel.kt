@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.ApplicationStatus
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.repository.ProfileRepository
 import com.arathort.localinteraction.domain.usecase.DeleteAvatarUseCase
@@ -11,6 +12,7 @@ import com.arathort.localinteraction.domain.usecase.GetMyProfileUseCase
 import com.arathort.localinteraction.domain.usecase.GetUserProfileUseCase
 import com.arathort.localinteraction.domain.usecase.LogoutUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
+import com.arathort.localinteraction.domain.usecase.SubmitComplaintUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateProfileUseCase
 import com.arathort.localinteraction.domain.usecase.UploadAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
@@ -40,7 +42,8 @@ class ProfileViewModel @AssistedInject constructor(
     private val withdrawApplicationUseCase: WithdrawApplicationUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val observeCurrentUserUseCase: ObserveCurrentUserUseCase,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val submitComplaintUseCase: SubmitComplaintUseCase
 ) : ViewModel() {
 
     @AssistedFactory
@@ -77,6 +80,18 @@ class ProfileViewModel @AssistedInject constructor(
             is ProfileEvent.ConfirmWithdrawTaskClicked -> confirmWithdrawTask()
             is ProfileEvent.DismissWithdrawDialog -> _uiState.update { it.copy(withdrawConfirmationApplicationId = null) }
             is ProfileEvent.EventClicked -> sendEffect(ProfileEffect.NavigateToEventDetails(event.eventId))
+            is ProfileEvent.ReportUserClicked -> {
+                val targetUser = _uiState.value.user ?: return
+                sendEffect(
+                    ProfileEffect.NavigateToReport(
+                        targetType = ComplaintTargetType.USER.apiValue,
+                        targetId = targetUser.id,
+                        targetTitle = targetUser.fullName.orEmpty().ifBlank { targetUser.email }
+                    )
+                )
+            }
+            is ProfileEvent.DismissReportDialog -> _uiState.update { it.copy(showReportDialog = false, isSubmittingReport = false) }
+            is ProfileEvent.SubmitReport -> handleSubmitReport(event.violationCategory, event.description)
             is ProfileEvent.LoginClicked -> sendEffect(ProfileEffect.NavigateToAuth)
             is ProfileEvent.BackClicked -> sendEffect(ProfileEffect.NavigateBack)
         }
@@ -178,6 +193,30 @@ class ProfileViewModel @AssistedInject constructor(
                 editBio = currentUser.description.orEmpty(),
                 errorMessageResId = null
             )
+        }
+    }
+
+    private fun handleSubmitReport(violationCategory: String, description: String) {
+        val user = _uiState.value.user ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmittingReport = true) }
+            submitComplaintUseCase(
+                targetType = ComplaintTargetType.USER,
+                targetId = user.id,
+                violationCategory = violationCategory,
+                description = description
+            ).onSuccess {
+                _uiState.update { it.copy(showReportDialog = false, isSubmittingReport = false) }
+                sendEffect(ProfileEffect.ShowSnackbar(R.string.complaint_submitted_success))
+            }.onFailure { error ->
+                _uiState.update { it.copy(isSubmittingReport = false) }
+                val msg = error.message.orEmpty()
+                if (msg.isNotBlank()) {
+                    sendEffect(ProfileEffect.ShowSnackbarText(msg))
+                } else {
+                    sendEffect(ProfileEffect.ShowSnackbar(R.string.error_network))
+                }
+            }
         }
     }
 

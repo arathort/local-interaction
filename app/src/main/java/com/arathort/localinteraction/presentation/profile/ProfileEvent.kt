@@ -18,6 +18,9 @@ sealed interface ProfileEvent {
     data object ConfirmWithdrawTaskClicked : ProfileEvent
     data object DismissWithdrawDialog : ProfileEvent
     data class EventClicked(val eventId: String) : ProfileEvent
+    data object ReportUserClicked : ProfileEvent
+    data object DismissReportDialog : ProfileEvent
+    data class SubmitReport(val violationCategory: String, val description: String) : ProfileEvent
     data object LoginClicked : ProfileEvent
     data object BackClicked : ProfileEvent
 }

@@ -37,4 +37,11 @@ sealed interface AppDestination : NavKey {
 
     @Serializable
     data object AdminPanel : AppDestination
+
+    @Serializable
+    data class Report(
+        val targetType: String,
+        val targetId: String,
+        val targetTitle: String
+    ) : AppDestination
 }

@@ -57,6 +57,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.arathort.localinteraction.R
 import com.arathort.localinteraction.domain.model.ApplicationStatus
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.GeoPoint
@@ -78,6 +79,7 @@ fun ProfileRoute(
     onNavigateToEventDetails: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToAdminPanel: () -> Unit = {},
+    onNavigateToReport: (String, String, String) -> Unit = { _, _, _ -> },
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,8 +94,14 @@ fun ProfileRoute(
                         message = context.resources.getString(effect.messageResId)
                     )
                 }
+                is ProfileEffect.ShowSnackbarText -> {
+                    snackbarHostState.showSnackbar(
+                        message = effect.message
+                    )
+                }
                 ProfileEffect.NavigateToAuth -> onNavigateToAuth()
                 is ProfileEffect.NavigateToEventDetails -> onNavigateToEventDetails(effect.eventId)
+                is ProfileEffect.NavigateToReport -> onNavigateToReport(effect.targetType, effect.targetId, effect.targetTitle)
                 ProfileEffect.NavigateBack -> onBack()
             }
         }
@@ -163,6 +171,13 @@ fun ProfileScreen(
                                 painter = painterResource(R.drawable.ic_logout),
                                 contentDescription = stringResource(R.string.profile_logout_action),
                                 tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    } else if (!state.isCurrentUser && !state.isGuest && state.user != null) {
+                        IconButton(onClick = { onEvent(ProfileEvent.ReportUserClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_flag),
+                                contentDescription = stringResource(R.string.report_user_action)
                             )
                         }
                     }

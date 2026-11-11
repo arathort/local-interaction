@@ -2,6 +2,7 @@ package com.arathort.localinteraction.presentation.event_details
 
 import androidx.annotation.StringRes
 import com.arathort.localinteraction.domain.model.Comment
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventStatus
 import com.arathort.localinteraction.domain.model.User
@@ -28,5 +29,10 @@ data class EventDetailsState(
     val selectedNewStatus: EventStatus? = null,
     val showDeleteEventDialog: Boolean = false,
     val selectedPhotoUrlForPreview: String? = null,
+    val showReportDialog: Boolean = false,
+    val reportTargetType: ComplaintTargetType? = null,
+    val reportTargetId: String? = null,
+    val reportTargetTitle: String = "",
+    val isSubmittingReport: Boolean = false,
     @param:StringRes val errorMessageResId: Int? = null
 )

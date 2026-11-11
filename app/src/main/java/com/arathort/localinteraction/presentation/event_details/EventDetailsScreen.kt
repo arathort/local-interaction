@@ -79,6 +79,7 @@ fun EventDetailsRoute(
     onNavigateToEditEvent: (String) -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
     onNavigateToWriteReview: ((String, String, String, String) -> Unit)? = null,
+    onNavigateToReport: (String, String, String) -> Unit = { _, _, _ -> },
     viewModel: EventDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,6 +94,7 @@ fun EventDetailsRoute(
                 is EventDetailsEffect.NavigateToManageApplications -> onNavigateToManageApplications(effect.eventId)
                 is EventDetailsEffect.NavigateToEditEvent -> onNavigateToEditEvent(effect.eventId)
                 is EventDetailsEffect.NavigateToProfile -> onNavigateToProfile(effect.userId)
+                is EventDetailsEffect.NavigateToReport -> onNavigateToReport(effect.targetType, effect.targetId, effect.targetTitle)
                 is EventDetailsEffect.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(
                         message = context.resources.getString(effect.messageResId)
@@ -164,6 +166,13 @@ fun EventDetailsScreen(
                                 painter = painterResource(R.drawable.ic_delete),
                                 contentDescription = stringResource(R.string.action_delete),
                                 tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    } else if (state.currentUser.role != UserRole.GUEST && state.event != null) {
+                        IconButton(onClick = { onEvent(EventDetailsEvent.ReportEventClicked) }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_flag),
+                                contentDescription = stringResource(R.string.report_event_action)
                             )
                         }
                     }
@@ -518,15 +527,19 @@ private fun EventCommentsSection(
                     val parentComment = comment.replyToCommentId?.let { commentsById[it] }
                     val canDelete = comment.authorId == state.currentUser.id ||
                         state.currentUser.role == UserRole.ADMIN
+                    val canReport = state.currentUser.role != UserRole.GUEST &&
+                        comment.authorId != state.currentUser.id
                     CommentCard(
                         comment = comment,
                         parentComment = parentComment,
                         isOrganizerAuthor = comment.authorId.isNotBlank() && comment.authorId == organizerId,
                         canReply = state.event?.status != EventStatus.CANCELLED,
                         canDelete = canDelete,
+                        canReport = canReport,
                         onAuthorClick = { onEvent(EventDetailsEvent.CommentAuthorClicked(comment.authorId)) },
                         onReplyClick = { onEvent(EventDetailsEvent.ReplyToCommentClicked(comment)) },
-                        onDeleteClick = { onEvent(EventDetailsEvent.DeleteCommentClicked(comment.id)) }
+                        onDeleteClick = { onEvent(EventDetailsEvent.DeleteCommentClicked(comment.id)) },
+                        onReportClick = { onEvent(EventDetailsEvent.ReportCommentClicked(comment.id, comment.authorName)) }
                     )
                 }
             }
@@ -672,9 +685,11 @@ private fun CommentCard(
     isOrganizerAuthor: Boolean,
     canReply: Boolean,
     canDelete: Boolean,
+    canReport: Boolean,
     onAuthorClick: () -> Unit,
     onReplyClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onReportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isReply = comment.replyToCommentId != null
@@ -765,6 +780,20 @@ private fun CommentCard(
                             text = formattedTime,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (canReport) {
+                    IconButton(
+                        onClick = onReportClick,
+                        modifier = Modifier.size(Dimensions.iconMedium)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_flag),
+                            contentDescription = stringResource(R.string.report_comment_action),
+                            modifier = Modifier.size(Dimensions.iconSmall),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
