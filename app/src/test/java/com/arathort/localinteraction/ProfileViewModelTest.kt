@@ -1,6 +1,8 @@
 package com.arathort.localinteraction
 
 import com.arathort.localinteraction.domain.model.ApplicationStatus
+import com.arathort.localinteraction.domain.model.Complaint
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventApplicationsManage
 import com.arathort.localinteraction.domain.model.EventStatus
@@ -14,12 +16,14 @@ import com.arathort.localinteraction.domain.model.UserStatus
 import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import com.arathort.localinteraction.domain.repository.AuthRepository
+import com.arathort.localinteraction.domain.repository.ComplaintRepository
 import com.arathort.localinteraction.domain.repository.ProfileRepository
 import com.arathort.localinteraction.domain.usecase.DeleteAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyProfileUseCase
 import com.arathort.localinteraction.domain.usecase.GetUserProfileUseCase
 import com.arathort.localinteraction.domain.usecase.LogoutUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
+import com.arathort.localinteraction.domain.usecase.SubmitComplaintUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateProfileUseCase
 import com.arathort.localinteraction.domain.usecase.UploadAvatarUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
@@ -148,6 +152,27 @@ class ProfileViewModelTest {
         override suspend fun rejectApplication(applicationId: String, reason: String) = Result.failure<VolunteerApplication>(UnsupportedOperationException())
     }
 
+    private val fakeComplaintRepository = object : ComplaintRepository {
+        override suspend fun createComplaint(
+            targetType: ComplaintTargetType,
+            targetId: String,
+            violationCategory: String,
+            description: String
+        ): Result<Complaint> = Result.success(
+            Complaint(
+                id = "comp-1",
+                reporterId = "user-vol-1",
+                reporterName = "Оксана",
+                violatorId = targetId,
+                violatorName = "Порушник",
+                reason = description,
+                targetType = targetType.apiValue,
+                targetId = targetId,
+                violationCategory = violationCategory
+            )
+        )
+    }
+
     private fun createViewModel(targetUserId: String? = null): ProfileViewModel =
         ProfileViewModel(
             targetUserId = targetUserId,
@@ -159,7 +184,8 @@ class ProfileViewModelTest {
             withdrawApplicationUseCase = WithdrawApplicationUseCase(fakeApplicationRepository),
             logoutUseCase = LogoutUseCase(fakeAuthRepository),
             observeCurrentUserUseCase = ObserveCurrentUserUseCase(fakeAuthRepository),
-            profileRepository = fakeProfileRepository
+            profileRepository = fakeProfileRepository,
+            submitComplaintUseCase = SubmitComplaintUseCase(fakeComplaintRepository)
         )
 
     @Before
@@ -332,6 +358,27 @@ class ProfileViewModelTest {
 
         assertFalse(viewModel.uiState.value.isUploadingAvatar)
         assertNull(viewModel.uiState.value.user?.avatarUrl)
+        collectJob.cancel()
+    }
+
+    @Test
+    fun `ReportUserClicked sends NavigateToReport effect with user info`() = runTest {
+        val viewModel = createViewModel(targetUserId = "other-user-2")
+        val effects = mutableListOf<ProfileEffect>()
+        val effectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.effect.collect { effects.add(it) }
+        }
+        val collectJob = backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        viewModel.onEvent(ProfileEvent.ReportUserClicked)
+        advanceUntilIdle()
+
+        val reportEffect = effects.filterIsInstance<ProfileEffect.NavigateToReport>().firstOrNull()
+        assertNotNull(reportEffect)
+        assertEquals(ComplaintTargetType.USER.apiValue, reportEffect?.targetType)
+        assertEquals("user-external", reportEffect?.targetId)
+        effectJob.cancel()
         collectJob.cancel()
     }
 }

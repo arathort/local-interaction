@@ -2,6 +2,8 @@ package com.arathort.localinteraction
 
 import com.arathort.localinteraction.domain.model.ApplicationStatus
 import com.arathort.localinteraction.domain.model.Comment
+import com.arathort.localinteraction.domain.model.Complaint
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
 import com.arathort.localinteraction.domain.model.Event
 import com.arathort.localinteraction.domain.model.EventApplicationsManage
 import com.arathort.localinteraction.domain.model.EventStatus
@@ -12,6 +14,7 @@ import com.arathort.localinteraction.domain.model.UserRole
 import com.arathort.localinteraction.domain.model.VolunteerApplication
 import com.arathort.localinteraction.domain.repository.ApplicationRepository
 import com.arathort.localinteraction.domain.repository.AuthRepository
+import com.arathort.localinteraction.domain.repository.ComplaintRepository
 import com.arathort.localinteraction.domain.repository.EventRepository
 import com.arathort.localinteraction.domain.usecase.AddEventCommentUseCase
 import com.arathort.localinteraction.domain.usecase.DeleteEventCommentUseCase
@@ -21,6 +24,7 @@ import com.arathort.localinteraction.domain.usecase.GetEventDetailsUseCase
 import com.arathort.localinteraction.domain.usecase.GetMyApplicationsUseCase
 import com.arathort.localinteraction.domain.usecase.ObserveCurrentUserUseCase
 import com.arathort.localinteraction.domain.usecase.SubmitApplicationUseCase
+import com.arathort.localinteraction.domain.usecase.SubmitComplaintUseCase
 import com.arathort.localinteraction.domain.usecase.UpdateEventStatusUseCase
 import com.arathort.localinteraction.domain.usecase.WithdrawApplicationUseCase
 import com.arathort.localinteraction.presentation.event_details.EventDetailsEffect
@@ -33,7 +37,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -155,6 +161,27 @@ class EventDetailsViewModelTest {
         override suspend fun restoreSession() = Result.success(null)
     }
 
+    private val fakeComplaintRepository = object : ComplaintRepository {
+        override suspend fun createComplaint(
+            targetType: ComplaintTargetType,
+            targetId: String,
+            violationCategory: String,
+            description: String
+        ): Result<Complaint> = Result.success(
+            Complaint(
+                id = "complaint-1",
+                reporterId = "user-1",
+                reporterName = "Волонтер",
+                violatorId = "user-organizer-1",
+                violatorName = "Тарас",
+                reason = description,
+                targetType = targetType.apiValue,
+                targetId = targetId,
+                violationCategory = violationCategory
+            )
+        )
+    }
+
     private fun createViewModel(eventId: String = "event-1"): EventDetailsViewModel = EventDetailsViewModel(
         eventId = eventId,
         getEventDetailsUseCase = GetEventDetailsUseCase(fakeEventRepository),
@@ -166,7 +193,8 @@ class EventDetailsViewModelTest {
         getEventCommentsUseCase = GetEventCommentsUseCase(fakeEventRepository),
         addEventCommentUseCase = AddEventCommentUseCase(fakeEventRepository),
         deleteEventCommentUseCase = DeleteEventCommentUseCase(fakeEventRepository),
-        deleteEventUseCase = DeleteEventUseCase(fakeEventRepository)
+        deleteEventUseCase = DeleteEventUseCase(fakeEventRepository),
+        submitComplaintUseCase = SubmitComplaintUseCase(fakeComplaintRepository)
     )
 
     @Before
@@ -338,5 +366,45 @@ class EventDetailsViewModelTest {
         assertFalse(viewModel.uiState.value.showDeleteEventDialog)
         val firstEffect = viewModel.effect.first()
         assertEquals(EventDetailsEffect.ShowSnackbar(R.string.event_delete_success), firstEffect)
+    }
+
+    @Test
+    fun `ReportEventClicked sends NavigateToReport effect with event info`() = runTest {
+        val viewModel = createViewModel()
+        val effects = mutableListOf<EventDetailsEffect>()
+        val effectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.effect.collect { effects.add(it) }
+        }
+        advanceUntilIdle()
+
+        viewModel.onEvent(EventDetailsEvent.ReportEventClicked)
+        advanceUntilIdle()
+
+        val reportEffect = effects.filterIsInstance<EventDetailsEffect.NavigateToReport>().firstOrNull()
+        assertNotNull(reportEffect)
+        assertEquals(ComplaintTargetType.EVENT.apiValue, reportEffect?.targetType)
+        assertEquals("event-1", reportEffect?.targetId)
+        assertEquals("Прибирання парку", reportEffect?.targetTitle)
+        effectJob.cancel()
+    }
+
+    @Test
+    fun `ReportCommentClicked sends NavigateToReport effect with comment info`() = runTest {
+        val viewModel = createViewModel()
+        val effects = mutableListOf<EventDetailsEffect>()
+        val effectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.effect.collect { effects.add(it) }
+        }
+        advanceUntilIdle()
+
+        viewModel.onEvent(EventDetailsEvent.ReportCommentClicked("comment-1", "Тарас"))
+        advanceUntilIdle()
+
+        val reportEffect = effects.filterIsInstance<EventDetailsEffect.NavigateToReport>().firstOrNull()
+        assertNotNull(reportEffect)
+        assertEquals(ComplaintTargetType.COMMENT.apiValue, reportEffect?.targetType)
+        assertEquals("comment-1", reportEffect?.targetId)
+        assertEquals("Тарас", reportEffect?.targetTitle)
+        effectJob.cancel()
     }
 }

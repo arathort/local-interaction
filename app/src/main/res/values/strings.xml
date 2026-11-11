@@ -372,4 +372,25 @@
     <string name="notification_type_new_review">Новий відгук</string>
     <string name="notification_type_new_comment">Новий коментар</string>
     <string name="notification_type_account_security">Безпека акаунту</string>
+
+    <string name="report_action">Поскаржитися</string>
+    <string name="report_event_action">Поскаржитися на цей захід</string>
+    <string name="report_comment_action">Поскаржитися на цей коментар</string>
+    <string name="report_user_action">Поскаржитися на цього користувача</string>
+    <string name="complaint_dialog_title">Подати скаргу</string>
+    <string name="complaint_dialog_subtitle">Опишіть виявлене порушення, щоб модератори платформи могли вжити заходів.</string>
+    <string name="complaint_category_label">Категорія порушення</string>
+    <string name="complaint_category_fraud">Шахрайство або обман</string>
+    <string name="complaint_category_spam">Спам або реклама</string>
+    <string name="complaint_category_harassment">Образи або цькування</string>
+    <string name="complaint_category_misinformation">Недостовірна інформація</string>
+    <string name="complaint_category_harmful">Небезпечна діяльність</string>
+    <string name="complaint_category_other">Інше порушення</string>
+    <string name="complaint_description_label">Детальний опис порушення</string>
+    <string name="complaint_description_hint">Опишіть ситуацію (мінімум 10 символів)…</string>
+    <string name="complaint_description_counter">%1$d / 10+ символів</string>
+    <string name="complaint_submit_button">Надіслати скаргу</string>
+    <string name="complaint_submitted_success">Скаргу успішно надіслано на розгляд модератору</string>
+    <string name="error_complaint_category_required">Оберіть категорію порушення</string>
+    <string name="error_complaint_description_too_short">Опис порушення має містити щонайменше 10 символів</string>
 </resources>

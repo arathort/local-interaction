@@ -58,4 +58,5 @@ object Dimensions {
     val notificationIconContainerSize = 40.dp
     val notificationIconSize = 20.dp
     val notificationItemPadding = 12.dp
+    val reportDescriptionMinHeight = 140.dp
 }
