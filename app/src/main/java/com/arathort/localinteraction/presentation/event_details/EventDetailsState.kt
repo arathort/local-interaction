@@ -1,0 +1,38 @@
+package com.arathort.localinteraction.presentation.event_details
+
+import androidx.annotation.StringRes
+import com.arathort.localinteraction.domain.model.Comment
+import com.arathort.localinteraction.domain.model.ComplaintTargetType
+import com.arathort.localinteraction.domain.model.Event
+import com.arathort.localinteraction.domain.model.EventStatus
+import com.arathort.localinteraction.domain.model.User
+import com.arathort.localinteraction.domain.model.VolunteerApplication
+
+data class EventDetailsState(
+    val event: Event? = null,
+    val currentUser: User = User(id = "guest"),
+    val userApplication: VolunteerApplication? = null,
+    val comments: List<Comment> = emptyList(),
+    val isCommentsLoading: Boolean = false,
+    val isSubmittingComment: Boolean = false,
+    val commentText: String = "",
+    val replyingToComment: Comment? = null,
+    @param:StringRes val commentErrorResId: Int? = null,
+    val deletingCommentId: String? = null,
+    val isLoading: Boolean = true,
+    val isActionLoading: Boolean = false,
+    val showApplyDialog: Boolean = false,
+    val motivationLetter: String = "",
+    val agreedToShareContacts: Boolean = false,
+    @param:StringRes val applyErrorResId: Int? = null,
+    val showStatusDialog: Boolean = false,
+    val selectedNewStatus: EventStatus? = null,
+    val showDeleteEventDialog: Boolean = false,
+    val selectedPhotoUrlForPreview: String? = null,
+    val showReportDialog: Boolean = false,
+    val reportTargetType: ComplaintTargetType? = null,
+    val reportTargetId: String? = null,
+    val reportTargetTitle: String = "",
+    val isSubmittingReport: Boolean = false,
+    @param:StringRes val errorMessageResId: Int? = null
+)
