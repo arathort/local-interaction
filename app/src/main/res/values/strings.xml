@@ -49,7 +49,7 @@
     <string name="event_details_comment_send">Надіслати</string>
     <string name="event_details_action_join">Долучитися</string>
     <string name="event_details_action_withdraw">Відкликати заявку</string>
-    <string name="event_details_action_manage_applications">Управління заявками</string>
+    <string name="event_details_action_manage_applications">Заявки</string>
     <string name="event_details_action_change_status">Змінити статус</string>
     <string name="event_details_motivation_hint">Коротко опишіть вашу мотивацію або досвід…</string>
     <string name="event_details_submit_application">Подати заявку</string>
@@ -208,6 +208,12 @@
     <string name="auth_login_success">Успішний вхід</string>
     <string name="auth_register_success">Успішна реєстрація</string>
     <string name="error_auth_invalid_credentials">Невірний email або пароль</string>
+    <string name="error_account_blocked">Ваш акаунт заблоковано. Зверніться до підтримки</string>
+    <string name="error_invalid_or_expired_token">Недійсний або застарілий токен</string>
+    <string name="error_user_not_found">Користувача з такою електронною поштою не знайдено</string>
+    <string name="error_too_many_requests">Забагато спроб. Зачекайте кілька хвилин</string>
+    <string name="error_server_unavailable">Сервер тимчасово недоступний. Спробуйте пізніше</string>
+    <string name="error_oauth_login_failed">Невдала авторизація через соціальну мережу. Перевірте токен</string>
     <string name="error_network">Помилка мережі. Перевірте з\'єднання</string>
     <string name="error_unknown">Сталася невідома помилка</string>
     <string name="event_details_application_submitted">Заявку успішно надіслано</string>

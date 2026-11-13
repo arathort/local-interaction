@@ -9,6 +9,7 @@ import com.arathort.localinteraction.domain.usecase.LoginUseCase
 import com.arathort.localinteraction.domain.usecase.OAuthLoginUseCase
 import com.arathort.localinteraction.domain.usecase.RegisterUseCase
 import com.arathort.localinteraction.domain.usecase.ResetPasswordUseCase
+import com.arathort.localinteraction.presentation.util.UiErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -192,12 +193,17 @@ class AuthViewModel @Inject constructor(
                     _effect.send(AuthEffect.NavigateBack)
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    val message = error.message.orEmpty()
-                    if (message.isNotBlank()) {
-                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    val uiError = UiErrorMapper.map(error)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            loginPasswordErrorResId = if (uiError.messageResId == R.string.error_auth_invalid_credentials) uiError.messageResId else it.loginPasswordErrorResId
+                        )
+                    }
+                    if (uiError.customMessage != null) {
+                        _effect.send(AuthEffect.ShowSnackbarText(uiError.customMessage))
                     } else {
-                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_auth_invalid_credentials))
+                        _effect.send(AuthEffect.ShowSnackbar(uiError.messageResId))
                     }
                 }
         }
@@ -268,12 +274,17 @@ class AuthViewModel @Inject constructor(
                     _effect.send(AuthEffect.NavigateBack)
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    val message = error.message.orEmpty()
-                    if (message.isNotBlank()) {
-                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    val uiError = UiErrorMapper.map(error)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            registerEmailErrorResId = if (uiError.messageResId == R.string.error_email_already_exists) uiError.messageResId else it.registerEmailErrorResId
+                        )
+                    }
+                    if (uiError.customMessage != null) {
+                        _effect.send(AuthEffect.ShowSnackbarText(uiError.customMessage))
                     } else {
-                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                        _effect.send(AuthEffect.ShowSnackbar(uiError.messageResId))
                     }
                 }
         }
@@ -303,12 +314,17 @@ class AuthViewModel @Inject constructor(
                     _effect.send(AuthEffect.ShowSnackbar(R.string.auth_recovery_code_sent_success))
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isRecoveryLoading = false) }
-                    val message = error.message.orEmpty()
-                    if (message.isNotBlank()) {
-                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    val uiError = UiErrorMapper.map(error)
+                    _uiState.update {
+                        it.copy(
+                            isRecoveryLoading = false,
+                            recoveryEmailErrorResId = if (uiError.messageResId == R.string.error_user_not_found) uiError.messageResId else it.recoveryEmailErrorResId
+                        )
+                    }
+                    if (uiError.customMessage != null) {
+                        _effect.send(AuthEffect.ShowSnackbarText(uiError.customMessage))
                     } else {
-                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                        _effect.send(AuthEffect.ShowSnackbar(uiError.messageResId))
                     }
                 }
         }
@@ -371,12 +387,17 @@ class AuthViewModel @Inject constructor(
                     _effect.send(AuthEffect.ShowSnackbar(R.string.auth_reset_password_success))
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isRecoveryLoading = false) }
-                    val message = error.message.orEmpty()
-                    if (message.isNotBlank()) {
-                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    val uiError = UiErrorMapper.map(error)
+                    _uiState.update {
+                        it.copy(
+                            isRecoveryLoading = false,
+                            resetTokenErrorResId = if (uiError.messageResId == R.string.error_invalid_or_expired_token) uiError.messageResId else it.resetTokenErrorResId
+                        )
+                    }
+                    if (uiError.customMessage != null) {
+                        _effect.send(AuthEffect.ShowSnackbarText(uiError.customMessage))
                     } else {
-                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                        _effect.send(AuthEffect.ShowSnackbar(uiError.messageResId))
                     }
                 }
         }
@@ -432,12 +453,17 @@ class AuthViewModel @Inject constructor(
                     _effect.send(AuthEffect.NavigateBack)
                 }
                 .onFailure { error ->
-                    _uiState.update { it.copy(isOAuthLoading = false) }
-                    val message = error.message.orEmpty()
-                    if (message.isNotBlank()) {
-                        _effect.send(AuthEffect.ShowSnackbarText(message))
+                    val uiError = UiErrorMapper.map(error)
+                    _uiState.update {
+                        it.copy(
+                            isOAuthLoading = false,
+                            oauthTokenErrorResId = if (uiError.messageResId == R.string.error_oauth_login_failed || uiError.messageResId == R.string.error_invalid_or_expired_token) uiError.messageResId else it.oauthTokenErrorResId
+                        )
+                    }
+                    if (uiError.customMessage != null) {
+                        _effect.send(AuthEffect.ShowSnackbarText(uiError.customMessage))
                     } else {
-                        _effect.send(AuthEffect.ShowSnackbar(R.string.error_unknown))
+                        _effect.send(AuthEffect.ShowSnackbar(uiError.messageResId))
                     }
                 }
         }
